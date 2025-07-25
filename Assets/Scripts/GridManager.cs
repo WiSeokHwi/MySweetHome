@@ -25,6 +25,8 @@ public class GridManager : MonoBehaviour
 
     // 외부에서 runtimeDefaultGridMaterial에 접근할 수 있도록 public 프로퍼티 추가
     public Material RuntimeDefaultGridMaterial => runtimeDefaultGridMaterial;
+    // PlacableItem에 점유 셀 목록 추가
+    public List<Vector3Int> OccupiedCells { get; } = new List<Vector3Int>();
 
 
     private Dictionary<Vector3Int, PlacableItem> occupiedCells = new Dictionary<Vector3Int, PlacableItem>();
