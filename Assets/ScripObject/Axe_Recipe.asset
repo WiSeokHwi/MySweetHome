@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f, type: 3}
+  m_Name: Axe_Recipe
+  m_EditorClassIdentifier: 
+  recipeName: Axe
+  recipeIcon: {fileID: 21300000, guid: affa059594145a843b81788037b4ee21, type: 3}
+  description: "\uB808\uC2DC\uD53C \uC124\uBA85\uC744 \uC785\uB825\uD558\uC138\uC694."
+  requiresExactPattern: 1
+  ignoreEmptySlots: 1
+  inputPattern:
+  - {fileID: 11400000, guid: f5f978f69401d344791c0728f574d422, type: 2}
+  - {fileID: 11400000, guid: f5f978f69401d344791c0728f574d422, type: 2}
+  - {fileID: 0}
+  - {fileID: 11400000, guid: f5f978f69401d344791c0728f574d422, type: 2}
+  - {fileID: 11400000, guid: f5f978f69401d344791c0728f574d422, type: 2}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 11400000, guid: f5f978f69401d344791c0728f574d422, type: 2}
+  - {fileID: 0}
+  resultMaterial: {fileID: 11400000, guid: 226d063b0ebeb954085ea23091426b4c, type: 2}
+  resultQuantity: 1
+  consumeQuantity: 1
+  canRepeatCraft: 1
