@@ -5,121 +5,105 @@ namespace WeaponsAndPropsAssetPack_NAS.Scripts
 {
     public class Breakable : MonoBehaviour
     {
+        [Header("Object References")]
         [SerializeField] private Transform wholeObject;
         [SerializeField] private Transform fracturedObject;
         [SerializeField] private bool isCyclic;
 
-        // Core Variables
-        private bool isBroken;
-        private bool isClean;
-        private bool objectReseted = true;
-        private Transform fracturedObjectInstance;
-        private bool shouldBreak;
-
-        // Variables to showcase in cycle
+        [Header("Cycle Timings")]
         private const float timeToCleanUp = 5f;
         private const float timeToStartDestruction = 2f;
         private const float timeToReconstructObject = 2f;
         private const float cycleTime = 0.2f;
-        private const float timerTimeUnit = 1f;
-        
+
+        // State
+        private Transform fracturedObjectInstance;
+        private bool isBroken = false;
+        private bool isClean = false;
+        private bool objectReseted = true;
+        private bool breakInProgress = false;
+
         private void Start()
         {
-            TriggerBreak();
-        }
-
-        private void TriggerBreak()
-        {
-            // Methods For Cyclic Use (I.E Destroy On Loop -  For Showcase)
             if (isCyclic)
             {
                 StartCoroutine(CycleDestruction());
             }
-            // Methods For Single Use (I.E Destroy Once)
             else
             {
                 StartCoroutine(DestroyOnce());
             }
         }
 
-        // Core Methods For Single Use (I.E Destroy Once)
         private IEnumerator DestroyOnce()
         {
-            objectReseted = false;
-            shouldBreak = true;
-            yield return null;
+            yield return new WaitForSeconds(timeToStartDestruction);
+            if (!breakInProgress)
+            {
+                StartCoroutine(BreakAndCleanSequence());
+            }
         }
 
-        private void Update()
+        private IEnumerator BreakAndCleanSequence()
         {
-            if (shouldBreak)
+            breakInProgress = true;
+
+            // Break
+            BreakObject();
+
+            // Wait for clean-up
+            yield return new WaitForSeconds(timeToCleanUp);
+            CleanUp();
+
+            // Optionally reset if cyclic
+            if (isCyclic)
             {
-                BreakObject();
+                yield return new WaitForSeconds(timeToReconstructObject);
+                ResetObject();
             }
+
+            breakInProgress = false;
         }
 
         private void BreakObject()
         {
+            if (isBroken) return;
+
             wholeObject.gameObject.SetActive(false);
-            fracturedObjectInstance = Instantiate(fracturedObject);
-            fracturedObjectInstance.position = wholeObject.position;
+            fracturedObjectInstance = Instantiate(fracturedObject, wholeObject.position, wholeObject.rotation);
             fracturedObjectInstance.gameObject.SetActive(true);
             isBroken = true;
-            shouldBreak = false;
-            StartCoroutine(CleanUpCoroutine());
         }
 
         private void CleanUp()
         {
+            if (fracturedObjectInstance != null)
+            {
+                Destroy(fracturedObjectInstance.gameObject);
+                fracturedObjectInstance = null;
+            }
+
             isClean = true;
-            Destroy(fracturedObjectInstance.gameObject);
         }
 
-        private IEnumerator ResetObject()
+        private void ResetObject()
         {
-            if (isClean)
-            {
-                yield return new WaitForSeconds(timeToReconstructObject);
-                wholeObject.gameObject.SetActive(true);
-                isBroken = false;
-                isClean = false;
-                objectReseted = true;
-            }
+            if (!isClean) return;
+
+            wholeObject.gameObject.SetActive(true);
+            isBroken = false;
+            isClean = false;
+            objectReseted = true;
         }
 
-        private IEnumerator CleanUpCoroutine()
-        {
-            float timer = 0f;
-            while (isBroken && !isClean)
-            {
-                if (timer >= timeToCleanUp)
-                {
-                    CleanUp();
-                }
-
-                yield return new WaitForSeconds(timerTimeUnit);
-                timer += 1f;
-            }
-
-            // Methods For Cyclic Use (I.E Destroy On Loop -  For Showcase)
-            if (isCyclic)
-            {
-                yield return ResetObject();
-            }
-
-            yield return null;
-        }
-
-        // Methods For Cyclic Use (I.E Destroy On Loop -  For Showcase)
         private IEnumerator CycleDestruction()
         {
             while (true)
             {
-                if (objectReseted)
+                if (objectReseted && !breakInProgress)
                 {
-                    yield return new WaitForSeconds(timeToStartDestruction);
                     objectReseted = false;
-                    shouldBreak = true;
+                    yield return BreakAndCleanSequence();
                 }
                 yield return new WaitForSeconds(cycleTime);
             }

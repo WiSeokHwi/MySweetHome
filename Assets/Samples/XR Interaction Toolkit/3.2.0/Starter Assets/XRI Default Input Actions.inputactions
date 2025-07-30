@@ -3403,7 +3403,7 @@
             "id": "613dca16-a1a2-451d-9b72-433d4f2dd966",
             "actions": [
                 {
-                    "name": "Secondary Button",
+                    "name": "Right Secondary Button",
                     "type": "Button",
                     "id": "abdca088-03fc-43fe-9ed7-97545e41e794",
                     "expectedControlType": "",
@@ -3412,9 +3412,18 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Primary Button",
+                    "name": "Right Primary Button",
                     "type": "Button",
                     "id": "2825f180-c276-419c-86c6-60662d624488",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Right Thumb Stick Touch",
+                    "type": "Button",
+                    "id": "9486b572-e14f-488a-abab-d9a59755521e",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -3429,7 +3438,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Secondary Button",
+                    "action": "Right Secondary Button",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -3440,7 +3449,66 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Primary Button",
+                    "action": "Right Primary Button",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "6cab05b6-b1d4-4a17-87a5-a616d194fa89",
+                    "path": "<XRController>{RightHand}/thumbstickTouched",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Right Thumb Stick Touch",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "XRI Left Button",
+            "id": "7a2c0852-7a7e-4db5-abe8-9f6f98decae2",
+            "actions": [
+                {
+                    "name": "Left Secondary Button",
+                    "type": "Button",
+                    "id": "3fabdb75-3f87-4366-8c20-34f9709a9905",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Left Primary Button",
+                    "type": "Button",
+                    "id": "9457d3d9-faf6-479f-9dfa-7275d90c7b0c",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "87f05d07-e66d-4900-90fa-3133fbb74f18",
+                    "path": "<XRController>{LeftHand}/{SecondaryButton}",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Secondary Button",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b89705d5-3a09-43c2-81c3-6dc64ec20010",
+                    "path": "<XRController>{LeftHand}/{PrimaryButton}",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Left Primary Button",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

@@ -1,17 +1,17 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
+using System; // Action 사용을 위해 추가
 
 /// <summary>
 /// PlayerInventory - 플레이어의 인벤토리 시스템
-/// 
+///
 /// == 주요 기능 ==
 /// 1. 아이템 추가/제거/검색
 /// 2. 스택 관리 (같은 아이템 자동 합치기)
 /// 3. 인벤토리 용량 제한
 /// 4. 제작 시스템과 연동
 /// 5. VR UI와 연동 준비
-/// 
+///
 /// == 싱글톤 패턴 ==
 /// - 게임 전체에서 하나의 인벤토리만 존재
 /// - PlayerInventory.Instance로 어디서든 접근 가능
@@ -19,208 +19,208 @@ using System.Linq;
 public class PlayerInventory : MonoBehaviour
 {
     // 싱글톤 인스턴스
-    public static PlayerInventory Instance { get; private set; }
-    
+    private static PlayerInventory _instance;
+    public static PlayerInventory Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                // 씬에서 PlayerInventory를 찾기
+                _instance = FindAnyObjectByType<PlayerInventory>();
+
+                if (_instance == null)
+                {
+                    // 없으면 새로 생성
+                    GameObject inventoryObject = new GameObject("PlayerInventory");
+                    _instance = inventoryObject.AddComponent<PlayerInventory>();
+                    DontDestroyOnLoad(inventoryObject);
+                    Debug.Log("[PlayerInventory] 자동으로 PlayerInventory 인스턴스를 생성했습니다.");
+                }
+            }
+            return _instance;
+        }
+        private set { _instance = value; }
+    }
+
     [Header("인벤토리 설정")]
     [Tooltip("인벤토리 최대 슬롯 수")]
     [SerializeField] private int maxSlots = 36;
     [Tooltip("디버그 로그 출력 여부")]
     [SerializeField] private bool enableDebugLogs = true;
-    
+
     [Header("현재 인벤토리 상태 (읽기 전용)")]
     [Tooltip("현재 인벤토리에 있는 아이템들")]
     [SerializeField] private List<ItemStack> inventorySlots = new List<ItemStack>();
-    
+
     // 이벤트 시스템
-    public System.Action<CraftingMaterial, int> OnItemAdded;      // 아이템 추가 시
-    public System.Action<CraftingMaterial, int> OnItemRemoved;    // 아이템 제거 시
-    public System.Action OnInventoryChanged;                      // 인벤토리 변경 시
-    
+    public Action<CraftingMaterial, int> OnItemAdded;    // 아이템 추가 시
+    public Action<CraftingMaterial, int> OnItemRemoved;  // 아이템 제거 시
+    public Action OnInventoryChanged;                    // 인벤토리 변경 시
+
     void Awake()
     {
         // 싱글톤 설정
-        if (Instance == null)
+        if (_instance == null)
         {
-            Instance = this;
-            DontDestroyOnLoad(gameObject); // 씬 전환 시에도 유지
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
             InitializeInventory();
-            
+
             if (enableDebugLogs)
                 Debug.Log("[PlayerInventory] 인벤토리 시스템이 초기화되었습니다.");
         }
-        else
+        else if (_instance != this)
         {
             if (enableDebugLogs)
                 Debug.LogWarning("[PlayerInventory] 인벤토리 인스턴스가 이미 존재합니다. 중복 오브젝트를 제거합니다.");
             Destroy(gameObject);
         }
     }
-    
-    /// <summary>
-    /// 인벤토리 초기화
-    /// </summary>
+
     private void InitializeInventory()
     {
         inventorySlots.Clear();
-        
-        // 빈 슬롯들로 초기화
+
         for (int i = 0; i < maxSlots; i++)
         {
             inventorySlots.Add(null);
         }
     }
-    
-    /// <summary>
-    /// 아이템을 인벤토리에 추가
-    /// </summary>
-    /// <param name="material">추가할 재료</param>
-    /// <param name="quantity">추가할 개수</param>
-    /// <returns>성공적으로 추가되었는지 여부</returns>
+
     public bool AddItem(CraftingMaterial material, int quantity)
     {
         if (material == null || quantity <= 0)
         {
             if (enableDebugLogs)
-                Debug.LogWarning("[PlayerInventory] 잘못된 아이템 추가 요청입니다.");
+                Debug.LogWarning("[PlayerInventory] 잘못된 아이템 추가 요청입니다: 재료가 없거나 수량이 0 이하입니다.");
             return false;
         }
-        
+
         int remainingQuantity = quantity;
-        
-        // 1단계: 기존 스택에 추가 시도
-        for (int i = 0; i < inventorySlots.Count && remainingQuantity > 0; i++)
+
+        if (material.isStackable)
         {
-            var slot = inventorySlots[i];
-            if (slot != null && slot.material == material)
+            for (int i = 0; i < inventorySlots.Count && remainingQuantity > 0; i++)
             {
-                int addableAmount = Mathf.Min(remainingQuantity, material.maxStackSize - slot.quantity);
-                if (addableAmount > 0)
+                var slot = inventorySlots[i];
+                if (slot != null && !slot.IsEmpty && slot.material == material && slot.Quantity < material.maxStackSize)
                 {
-                    slot.quantity += addableAmount;
-                    remainingQuantity -= addableAmount;
-                    
-                    if (enableDebugLogs)
-                        Debug.Log($"[PlayerInventory] {material.materialName} x{addableAmount}을 기존 스택에 추가했습니다. (슬롯 {i})");
+                    int addableAmount = Mathf.Min(remainingQuantity, material.maxStackSize - slot.Quantity);
+                    if (addableAmount > 0)
+                    {
+                        slot.AddItems(addableAmount);
+                        remainingQuantity -= addableAmount;
+
+                        if (enableDebugLogs)
+                            Debug.Log($"[PlayerInventory] {material.materialName} x{addableAmount}을 기존 스택에 추가했습니다. (슬롯 {i}, 현재: {slot.Quantity})");
+                    }
                 }
             }
         }
-        
-        // 2단계: 새로운 슬롯에 추가
+
         while (remainingQuantity > 0)
         {
             int emptySlotIndex = FindEmptySlot();
             if (emptySlotIndex == -1)
             {
-                // 인벤토리가 가득 참
                 if (enableDebugLogs)
                     Debug.LogWarning($"[PlayerInventory] 인벤토리가 가득 차서 {material.materialName} x{remainingQuantity}을 추가할 수 없습니다.");
-                return remainingQuantity == quantity ? false : true; // 일부라도 추가되었으면 true
+                return remainingQuantity == quantity ? false : true;
             }
-            
-            int stackSize = Mathf.Min(remainingQuantity, material.maxStackSize);
+
+            int stackSize = material.isStackable ? Mathf.Min(remainingQuantity, material.maxStackSize) : 1;
             inventorySlots[emptySlotIndex] = new ItemStack(material, stackSize);
             remainingQuantity -= stackSize;
-            
+
             if (enableDebugLogs)
                 Debug.Log($"[PlayerInventory] {material.materialName} x{stackSize}을 새 슬롯에 추가했습니다. (슬롯 {emptySlotIndex})");
         }
-        
-        // 이벤트 발생
+
         OnItemAdded?.Invoke(material, quantity - remainingQuantity);
         OnInventoryChanged?.Invoke();
-        
+
         return true;
     }
-    
-    /// <summary>
-    /// 아이템을 인벤토리에서 제거
-    /// </summary>
-    /// <param name="material">제거할 재료</param>
-    /// <param name="quantity">제거할 개수</param>
-    /// <returns>실제로 제거된 개수</returns>
+
     public int RemoveItem(CraftingMaterial material, int quantity)
     {
         if (material == null || quantity <= 0)
+        {
+            if (enableDebugLogs)
+                Debug.LogWarning("[PlayerInventory] 잘못된 아이템 제거 요청입니다: 재료가 없거나 수량이 0 이하입니다.");
             return 0;
-        
+        }
+
         int remainingToRemove = quantity;
         int totalRemoved = 0;
-        
-        // 뒤에서부터 제거 (최신 추가된 것부터)
+
         for (int i = inventorySlots.Count - 1; i >= 0 && remainingToRemove > 0; i--)
         {
             var slot = inventorySlots[i];
-            if (slot != null && slot.material == material)
+            if (slot != null && !slot.IsEmpty && slot.material == material)
             {
                 int removeAmount = Mathf.Min(remainingToRemove, slot.Quantity);
-                slot.Quantity -= removeAmount;
-                remainingToRemove -= removeAmount;
-                totalRemoved += removeAmount;
-                
-                // 스택이 비었으면 슬롯 정리
-                if (slot.Quantity <= 0)
+                int actualRemoved = slot.RemoveItems(removeAmount);
+                remainingToRemove -= actualRemoved;
+                totalRemoved += actualRemoved;
+
+                if (slot.IsEmpty)
                 {
                     inventorySlots[i] = null;
                 }
-                
+
                 if (enableDebugLogs)
-                    Debug.Log($"[PlayerInventory] {material.materialName} x{removeAmount}을 제거했습니다. (슬롯 {i})");
+                    Debug.Log($"[PlayerInventory] {material.materialName} x{actualRemoved}을 제거했습니다. (슬롯 {i}, 남은 수량: {(slot != null ? slot.Quantity.ToString() : "0")})");
             }
         }
-        
-        // 이벤트 발생
+
         if (totalRemoved > 0)
         {
             OnItemRemoved?.Invoke(material, totalRemoved);
             OnInventoryChanged?.Invoke();
         }
-        
+
+        if (remainingToRemove > 0 && enableDebugLogs)
+        {
+            Debug.LogWarning($"[PlayerInventory] {material.materialName} {remainingToRemove}개를 제거하지 못했습니다. 인벤토리에 부족합니다.");
+        }
+
         return totalRemoved;
     }
-    
-    /// <summary>
-    /// 특정 아이템의 개수 확인
-    /// </summary>
-    /// <param name="material">확인할 재료</param>
-    /// <returns>인벤토리에 있는 해당 아이템의 총 개수</returns>
+
     public int GetItemCount(CraftingMaterial material)
     {
         if (material == null) return 0;
-        
+
         int totalCount = 0;
         foreach (var slot in inventorySlots)
         {
-            if (slot != null && slot.material == material)
+            if (slot != null && !slot.IsEmpty && slot.material == material)
             {
                 totalCount += slot.Quantity;
             }
         }
-        
+
         return totalCount;
     }
-    
-    /// <summary>
-    /// 특정 아이템이 충분한지 확인
-    /// </summary>
-    /// <param name="material">확인할 재료</param>
-    /// <param name="requiredQuantity">필요한 개수</param>
-    /// <returns>충분한 아이템이 있는지 여부</returns>
+
     public bool HasEnoughItems(CraftingMaterial material, int requiredQuantity)
     {
         return GetItemCount(material) >= requiredQuantity;
     }
-    
-    /// <summary>
-    /// 제작 레시피 실행 가능 여부 확인
-    /// </summary>
-    /// <param name="recipe">확인할 레시피</param>
-    /// <returns>제작 가능 여부</returns>
+
     public bool CanCraftRecipe(CraftingRecipe recipe)
     {
-        if (recipe == null) return false;
-        
+        if (recipe == null)
+        {
+            if (enableDebugLogs)
+                Debug.LogWarning("[PlayerInventory] 제작 가능 여부 확인: 유효하지 않은 레시피입니다.");
+            return false;
+        }
+
         var requiredMaterials = recipe.GetRequiredMaterials();
-        
+
         foreach (var requirement in requiredMaterials)
         {
             if (!HasEnoughItems(requirement.Key, requirement.Value))
@@ -230,136 +230,144 @@ public class PlayerInventory : MonoBehaviour
                 return false;
             }
         }
-        
+
         return true;
     }
-    
-    /// <summary>
-    /// 제작 레시피 실행 (재료 소모 + 결과물 추가)
-    /// </summary>
-    /// <param name="recipe">실행할 레시피</param>
-    /// <returns>제작 성공 여부</returns>
+
     public bool ExecuteRecipe(CraftingRecipe recipe)
     {
-        if (!CanCraftRecipe(recipe)) return false;
-        
-        // 재료 소모
+        if (!CanCraftRecipe(recipe))
+        {
+            if (enableDebugLogs)
+                Debug.LogWarning($"[PlayerInventory] 제작 실패: 레시피 '{recipe?.recipeName ?? "NULL"}'를 제작할 수 없습니다 (재료 부족 등).");
+            return false;
+        }
+
         var requiredMaterials = recipe.GetRequiredMaterials();
         foreach (var requirement in requiredMaterials)
         {
             RemoveItem(requirement.Key, requirement.Value);
         }
-        
-        // 결과물 추가
+
         bool success = AddItem(recipe.resultMaterial, recipe.resultQuantity);
-        
+
         if (success && enableDebugLogs)
         {
             Debug.Log($"[PlayerInventory] 제작 성공: {recipe.recipeName} → {recipe.resultMaterial.materialName} x{recipe.resultQuantity}");
         }
-        
+        else if (!success && enableDebugLogs)
+        {
+            Debug.LogError($"[PlayerInventory] 제작은 성공했으나 결과물 '{recipe.resultMaterial.materialName}'을(를) 인벤토리에 추가하지 못했습니다. 인벤토리가 가득 찼을 수 있습니다.");
+        }
+
         return success;
     }
-    
-    /// <summary>
-    /// 빈 슬롯 찾기
-    /// </summary>
-    /// <returns>빈 슬롯의 인덱스, 없으면 -1</returns>
+
     private int FindEmptySlot()
     {
         for (int i = 0; i < inventorySlots.Count; i++)
         {
-            if (inventorySlots[i] == null)
+            if (inventorySlots[i] == null || inventorySlots[i].IsEmpty)
                 return i;
         }
         return -1;
     }
-    
-    /// <summary>
-    /// 사용된 슬롯 개수 반환
-    /// </summary>
+
+    // LINQ 대신 for문으로 메모리 누수 감소
     public int GetUsedSlotCount()
     {
-        return inventorySlots.Count(slot => slot != null);
+        int count = 0;
+        foreach (var slot in inventorySlots)
+        {
+            if (slot != null && !slot.IsEmpty)
+                count++;
+        }
+        return count;
     }
-    
-    /// <summary>
-    /// 인벤토리 정리 (빈 슬롯 제거)
-    /// </summary>
+
     public void CompactInventory()
     {
         var compactedSlots = new List<ItemStack>();
-        
-        // null이 아닌 슬롯들만 추가
+
         foreach (var slot in inventorySlots)
         {
-            if (slot != null)
+            if (slot != null && !slot.IsEmpty)
                 compactedSlots.Add(slot);
         }
-        
-        // 나머지는 null로 채움
+
         while (compactedSlots.Count < maxSlots)
         {
             compactedSlots.Add(null);
         }
-        
+
         inventorySlots = compactedSlots;
         OnInventoryChanged?.Invoke();
-        
+
         if (enableDebugLogs)
             Debug.Log("[PlayerInventory] 인벤토리가 정리되었습니다.");
     }
-    
-    /// <summary>
-    /// 인벤토리 완전 초기화
-    /// </summary>
+
     [ContextMenu("인벤토리 초기화")]
     public void ClearInventory()
     {
-        inventorySlots.Clear();
         InitializeInventory();
         OnInventoryChanged?.Invoke();
-        
+
         if (enableDebugLogs)
-            Debug.Log("[PlayerInventory] 인벤토리가 초기화되었습니다.");
+            Debug.Log("[PlayerInventory] 인벤토리가 완전히 초기화되었습니다.");
     }
-    
-    /// <summary>
-    /// 현재 인벤토리 상태 출력 (디버그용)
-    /// </summary>
+
     [ContextMenu("인벤토리 상태 출력")]
     public void PrintInventoryStatus()
     {
         Debug.Log("=== 인벤토리 상태 ===");
         Debug.Log($"사용 슬롯: {GetUsedSlotCount()}/{maxSlots}");
-        
+
         for (int i = 0; i < inventorySlots.Count; i++)
         {
             var slot = inventorySlots[i];
-            if (slot != null)
+            if (slot != null && !slot.IsEmpty)
             {
-                Debug.Log($"슬롯 {i}: {slot.material.materialName} x{slot.quantity}");
+                Debug.Log($"슬롯 {i}: {slot.material.materialName} x{slot.Quantity}");
+            }
+            else
+            {
+                Debug.Log($"슬롯 {i}: 비어있음");
             }
         }
         Debug.Log("==================");
     }
-    
-    /// <summary>
-    /// 테스트용 아이템 추가
-    /// </summary>
+
+    public ItemStack GetSlot(int slotIndex)
+    {
+        if (slotIndex < 0 || slotIndex >= inventorySlots.Count)
+        {
+            if (enableDebugLogs)
+                Debug.LogWarning($"[PlayerInventory] 유효하지 않은 슬롯 인덱스 요청: {slotIndex}");
+            return null;
+        }
+
+        return inventorySlots[slotIndex];
+    }
+
+    // 복사본 반환 대신 원본 리스트 반환 (외부 수정 주의)
+    public List<ItemStack> GetAllSlots()
+    {
+        return inventorySlots;
+    }
+
     [ContextMenu("테스트 아이템 추가")]
     public void AddTestItems()
     {
-        // 이 메서드는 에디터에서 테스트용으로만 사용
-        Debug.Log("[PlayerInventory] 테스트 아이템 추가 기능은 실제 아이템이 있을 때 구현됩니다.");
+        if (enableDebugLogs)
+            Debug.Log("[PlayerInventory] 테스트 아이템 추가 기능이 실행되었습니다. 실제 아이템 추가 로직을 구현해야 합니다.");
     }
-    
+
     void OnDestroy()
     {
-        // 싱글톤 정리
-        if (Instance == this)
+        if (_instance == this)
         {
-            Instance = null;
+            _instance = null;
         }
     }
 }

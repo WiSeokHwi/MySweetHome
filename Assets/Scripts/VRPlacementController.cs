@@ -3,6 +3,8 @@ using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.InputSystem;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
+using System.Collections.Generic;
+using UnityEngine.XR;
 
 public class VRPlacementController : MonoBehaviour
 {
@@ -57,7 +59,7 @@ public class VRPlacementController : MonoBehaviour
     {
         if (gridManager == null)
         {
-            gridManager = FindObjectOfType<GridManager>();
+            gridManager = FindAnyObjectByType<GridManager>();
             if (gridManager == null)
             {
                 Debug.LogError("VRPlacementController: GridManager를 찾을 수 없습니다!", this);
@@ -118,7 +120,7 @@ public class VRPlacementController : MonoBehaviour
         }
 
         ExitPlacementMode();
-        
+
         // 배치 레이캐스터 명시적 비활성화 (안전장치)
         if (placementRayInteractor != null)
             placementRayInteractor.enabled = false;
@@ -169,9 +171,13 @@ public class VRPlacementController : MonoBehaviour
         }
         else
         {
-            // 배치 모드가 아닐 때는 물리 상태 복원
+            // 배치 모드가 아닐 때는 물리 상태 복원하고 그리드 점유 해제
             RestoreRigidbodyState(currentGrabbedItem);
-            
+
+            // GridManager에게 아이템이 떨어뜨려졌음을 알림
+            if (gridManager != null)
+                gridManager.HandleItemDropped(currentGrabbedItem);
+
             // 아이템을 놓았으므로 currentGrabbedItem 초기화
             currentGrabbedItem = null;
         }
@@ -218,7 +224,7 @@ public class VRPlacementController : MonoBehaviour
         if (inPlacementMode && currentGrabbedItem != null)
         {
             UpdatePlacementPreview();
-            
+
             // 로컬 그리드 업데이트 (플레이어 위치 기준)
             if (gridManager != null && nearFarInteractor != null)
             {
@@ -238,7 +244,7 @@ public class VRPlacementController : MonoBehaviour
 
         CreatePreviewObject(currentGrabbedItem.gameObject);
         HideOriginalItem(true);
-        
+
         // 회전 추적 비활성화
         var grabInteractable = currentGrabbedItem.GetComponent<XRGrabInteractable>();
         if (grabInteractable != null)
@@ -287,14 +293,14 @@ public class VRPlacementController : MonoBehaviour
         }
 
         Vector3 targetPreviewPosition = gridManager.SnapToGridForPlacement(
-            hasHit ? hit.point : currentGrabbedItem.transform.position, 
-            currentGrabbedItem.itemGridSize, 
+            hasHit ? hit.point : currentGrabbedItem.transform.position,
+            currentGrabbedItem.itemGridSize,
             currentGrabbedItem.ItemWorldHeight
         );
 
         Vector3Int projectedGridOrigin = gridManager.WorldToGridCoordinates(targetPreviewPosition);
-        bool canPlace = hasHit && 
-                       gridManager.IsInGridBounds(projectedGridOrigin) && 
+        bool canPlace = hasHit &&
+                       gridManager.IsInGridBounds(projectedGridOrigin) &&
                        gridManager.CanPlaceItem(projectedGridOrigin, currentGrabbedItem.itemGridSize) &&
                        !hasCollision; // 충돌 상태도 검사
 
@@ -323,10 +329,10 @@ public class VRPlacementController : MonoBehaviour
         // Smart rotation logic (90도 단위 스냅)
         Vector3 rayDirection = hit.normal != Vector3.zero ? -hit.normal : Vector3.forward;
         Vector3 projectedDirection = new Vector3(rayDirection.x, 0, rayDirection.z).normalized;
-        
+
         float angle = Mathf.Atan2(projectedDirection.x, projectedDirection.z) * Mathf.Rad2Deg;
         float snappedAngle = Mathf.Round(angle / 90f) * 90f;
-        
+
         return Quaternion.Euler(0, snappedAngle, 0);
     }
 
@@ -380,14 +386,14 @@ public class VRPlacementController : MonoBehaviour
         }
 
         Vector3 finalPlacementPosition = gridManager.SnapToGridForPlacement(
-            hasHit ? hit.point : originalGrabbedItemPosition, 
-            currentGrabbedItem.itemGridSize, 
+            hasHit ? hit.point : originalGrabbedItemPosition,
+            currentGrabbedItem.itemGridSize,
             currentGrabbedItem.ItemWorldHeight
         );
 
         Vector3Int projectedGridOrigin = gridManager.WorldToGridCoordinates(finalPlacementPosition);
-        bool canPlace = hasHit && 
-                       gridManager.IsInGridBounds(projectedGridOrigin) && 
+        bool canPlace = hasHit &&
+                       gridManager.IsInGridBounds(projectedGridOrigin) &&
                        gridManager.CanPlaceItem(projectedGridOrigin, currentGrabbedItem.itemGridSize) &&
                        !hasCollision; // 충돌 상태도 검사
 
@@ -407,7 +413,7 @@ public class VRPlacementController : MonoBehaviour
                 failureReason = "그리드 셀이 이미 점유됨";
             else if (hasCollision)
                 failureReason = "다른 오브젝트와 충돌";
-                
+
             HandlePlacementFailure(failureReason);
         }
 
@@ -434,20 +440,26 @@ public class VRPlacementController : MonoBehaviour
         SendHapticFeedback(true);
 
         Debug.Log($"아이템 '{currentGrabbedItem.gameObject.name}'이 성공적으로 배치되었습니다.");
-        
+
         currentGrabbedItem = null;
     }
 
     private void HandlePlacementFailure(string reason)
     {
         Debug.LogWarning($"아이템 배치 실패: {reason}. 현재 위치에서 떨어뜨립니다.");
-        
+
         // 현재 위치에서 떨어뜨리기
         if (currentGrabbedItem != null)
         {
             // 원본 아이템 메시 렌더러 다시 활성화
             HideOriginalItem(false);
-            
+
+            // 배치 실패 시 그리드 점유 해제 (GridManager에게 알림)
+            if (gridManager != null)
+            {
+                gridManager.HandleItemDropped(currentGrabbedItem);
+            }
+
             // 현재 위치 유지 (원래 위치로 돌아가지 않음)
             // 물리 상태만 복원하여 자연스럽게 떨어지도록 함
             RestoreRigidbodyState(currentGrabbedItem);
@@ -455,6 +467,9 @@ public class VRPlacementController : MonoBehaviour
 
         // 햅틱 피드백
         SendHapticFeedback(false);
+
+        // 배치 실패했으므로 currentGrabbedItem 초기화
+        currentGrabbedItem = null;
     }
 
     private void SetGrabbedRigidbodyState(PlacableItem item)
@@ -512,7 +527,7 @@ public class VRPlacementController : MonoBehaviour
         }
 
         previewObject = new GameObject($"Preview_{originalObject.name}");
-        
+
         var previewMeshFilter = previewObject.AddComponent<MeshFilter>();
         previewMeshFilter.mesh = originalMeshFilter.mesh;
 
@@ -622,14 +637,48 @@ public class VRPlacementController : MonoBehaviour
 
     private void SendHapticFeedback(bool success)
     {
-        // XR Controller에서 햅틱 피드백 구현
-        var controller = nearFarInteractor?.transform.GetComponent<ActionBasedController>();
-        if (controller == null) return;
+        if (nearFarInteractor == null) return;
 
-        float intensity = success ? placementSuccessHapticIntensity : placementFailureHapticIntensity;
+        // nearFarInteractor가 붙은 게임오브젝트에서 XR Controller의 InputDevice를 얻음
+        var xrInteractor = nearFarInteractor;
+        var inputDevice = GetInputDeviceFromInteractor(xrInteractor);
+        if (!inputDevice.isValid)
+        {
+            Debug.LogWarning("SendHapticFeedback: 유효한 InputDevice를 찾을 수 없습니다.");
+            return;
+        }
+
+        float amplitude = success ? placementSuccessHapticIntensity : placementFailureHapticIntensity;
         float duration = success ? 0.1f : 0.2f;
-        
-        controller.SendHapticImpulse(intensity, duration);
+
+        // 채널 0에서 햅틱 실행
+        inputDevice.SendHapticImpulse(0, amplitude, duration);
+    }
+
+    private UnityEngine.XR.InputDevice GetInputDeviceFromInteractor(NearFarInteractor interactor)
+    {
+        // XRDirectInteractor, XRRayInteractor 등 인터랙터에서 InputDevice 접근 방법
+        // 여기서는 간단히 interactor.transform을 통해 DeviceRole을 찾는 예시입니다.
+
+        UnityEngine.XR.InputDevice device = default;
+
+        // 예시: 왼손 혹은 오른손 역할 찾기 (필요시 수정)
+        var characteristics = InputDeviceCharacteristics.HeldInHand | InputDeviceCharacteristics.Controller;
+
+        var devices = new List<UnityEngine.XR.InputDevice>();
+        InputDevices.GetDevicesWithCharacteristics(characteristics, devices);
+
+        foreach (var dev in devices)
+        {
+            // 위치가 비슷한 디바이스 찾기 (더 정교하게 매칭 필요)
+            if (dev.isValid)
+            {
+                device = dev;
+                break;
+            }
+        }
+
+        return device;
     }
 
     private bool IsItemCurrentlyGrabbed(PlacableItem item)

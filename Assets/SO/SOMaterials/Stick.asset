@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d, type: 3}
+  m_Name: Stick
+  m_EditorClassIdentifier: 
+  materialName: Stick
+  icon: {fileID: -929791304, guid: 4e4f13367fcc5854aa9609fc24ac98b0, type: 3}
+  worldPrefab: {fileID: 8551928907943490973, guid: 09bfb31cab268164580d28d36bca5cf5, type: 3}
+  isStackable: 1
+  maxStackSize: 64
+  canBeUsedInCrafting: 1
+  canBeCrafted: 1
+  materialColor: {r: 1, g: 1, b: 1, a: 1}
+  description: "\uC7AC\uB8CC \uC124\uBA85\uC744 \uC785\uB825\uD558\uC138\uC694."

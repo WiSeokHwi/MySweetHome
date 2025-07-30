@@ -253,19 +253,17 @@ public class VRCraftingTable : MonoBehaviour
     /// <returns>첫 번째 사용 가능한 아이템</returns>
     private CraftingMaterial GetFirstAvailableItem(PlayerInventory inventory)
     {
-        // 실제 구현에서는 UI를 통해 아이템 선택
-        // 여기서는 테스트를 위해 하드코딩된 우선순위 사용
+        var allSlots = inventory.GetAllSlots();
         
-        // 일반적인 제작 재료들을 순서대로 확인
-        string[] materialNames = { "Wood", "Stone", "Iron Ore", "Stick" };
-        
-        foreach (string materialName in materialNames)
+        foreach (var slot in allSlots)
         {
-            // 실제로는 이름으로 아이템을 찾는 방법 구현 필요
-            // 현재는 단순화된 버전
+            if (slot != null && !slot.IsEmpty && slot.Quantity > 0)
+            {
+                return slot.material;
+            }
         }
         
-        return null; // 임시로 null 반환
+        return null;
     }
     
     /// <summary>
@@ -344,7 +342,7 @@ public class VRCraftingTable : MonoBehaviour
         }
         
         // 레시피 매칭 시도
-        //currentRecipe = craftingManager.FindMatchingRecipe(currentPattern);
+        currentRecipe = craftingManager.FindMatchingRecipe(currentPattern);
         
         // 결과 미리보기 업데이트
         UpdateResultPreview();
