@@ -106,8 +106,6 @@ MonoBehaviour:
   lateLatchingMode: 0
   lateLatchingDebug: 0
   optimizeMultiviewRenderRegions: 0
-  multiviewRenderRegionsOptimizationMode: 0
-  m_hasMigratedMultiviewRenderRegions: 1
   spacewarpMotionVectorTextureFormat: 0
 --- !u!114 &-8721457209471269160
 MonoBehaviour:
@@ -360,7 +358,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1927c045052a06d49a9b21fdcaa26db6, type: 3}
   m_Name: MetaXRFeature Android
   m_EditorClassIdentifier: 
-  m_enabled: 0
+  m_enabled: 1
   nameUi: Meta XR Feature
   version: 0.0.1
   featureIdInternal: com.meta.openxr.feature.metaxr
@@ -494,11 +492,7 @@ MonoBehaviour:
   m_spacewarpMotionVectorTextureFormat: 0
   m_optimizeBufferDiscards: 0
   m_symmetricProjection: 0
-  m_optimizeMultiviewRenderRegions: 0
-  m_multiviewRenderRegionsOptimizationMode: 0
-  m_hasMigratedMultiviewRenderRegionSetting: 1
   m_foveatedRenderingApi: 0
-  m_useOpenXRPredictedTime: 0
 --- !u!114 &-6817817146515874932
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -591,7 +585,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d28f705476c80d47acb3dfade3d3142, type: 3}
   m_Name: MetaXRFoveationFeature Android
   m_EditorClassIdentifier: 
-  m_enabled: 0
+  m_enabled: 1
   nameUi: Meta XR Foveation
   version: 1.0.0
   featureIdInternal: com.meta.openxr.feature.foveation
@@ -1323,7 +1317,6 @@ MonoBehaviour:
   m_Name: Android
   m_EditorClassIdentifier: 
   features:
-  - {fileID: -6203977942698775595}
   - {fileID: 4787594027113069724}
   - {fileID: -7251421902553186696}
   - {fileID: 3271569453749205027}
@@ -1344,22 +1337,7 @@ MonoBehaviour:
   - {fileID: 1508570775753900328}
   - {fileID: 8806067943520874070}
   - {fileID: 7425342895089530945}
-  - {fileID: 7157668096289948992}
-  - {fileID: 6456990998641108218}
-  - {fileID: -695303467751441842}
-  - {fileID: 1570480863155137011}
-  - {fileID: -6730586302451501572}
   - {fileID: -7726576862971240322}
-  - {fileID: -6548237547923027136}
-  - {fileID: -6977385052951109911}
-  - {fileID: 180130355184964991}
-  - {fileID: 5163957272397468948}
-  - {fileID: 8695350577555042650}
-  - {fileID: 3794197728282302233}
-  - {fileID: 2396603747608076590}
-  - {fileID: 379407054845830967}
-  - {fileID: 8474107648666270791}
-  - {fileID: -4535992229753174241}
   - {fileID: 287752361331399966}
   - {fileID: -2912639699037948035}
   - {fileID: -8097877562703446408}
@@ -1372,11 +1350,7 @@ MonoBehaviour:
   m_spacewarpMotionVectorTextureFormat: 0
   m_optimizeBufferDiscards: 0
   m_symmetricProjection: 0
-  m_optimizeMultiviewRenderRegions: 0
-  m_multiviewRenderRegionsOptimizationMode: 0
-  m_hasMigratedMultiviewRenderRegionSetting: 1
   m_foveatedRenderingApi: 0
-  m_useOpenXRPredictedTime: 0
 --- !u!114 &7425342895089530945
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1389,7 +1363,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: feeef8d85de8db242bdda70cc7ff5acd, type: 3}
   m_Name: OculusTouchControllerProfile Android
   m_EditorClassIdentifier: 
-  m_enabled: 0
+  m_enabled: 1
   nameUi: Oculus Touch Controller Profile
   version: 0.0.1
   featureIdInternal: com.unity.openxr.feature.input.oculustouch

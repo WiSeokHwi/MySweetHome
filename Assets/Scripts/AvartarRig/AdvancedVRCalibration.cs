@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.XR;
 using UnityEngine.Animations.Rigging;
 using System.Collections;
 
@@ -62,12 +63,110 @@ public class AdvancedVRCalibration : MonoBehaviour
 
     private VRAvatarOptimizer optimizer;
 
+    private void AutoDetectVRComponents()
+    {
+        // XR Origin 자동 감지
+        if (headset == null || leftController == null || rightController == null)
+        {
+            // XR Origin 찾기
+            GameObject xrOrigin = GameObject.Find("XR Origin (XR Rig)");
+            if (xrOrigin == null) xrOrigin = GameObject.Find("XR Origin");
+            // XROrigin 타입 참조 없이 이름으로만 찾기
+
+            if (xrOrigin != null)
+            {
+                Debug.Log("XR Origin found: " + xrOrigin.name);
+                
+                // 헤드셋 (Main Camera) 찾기
+                if (headset == null)
+                {
+                    Transform cameraOffset = xrOrigin.transform.Find("Camera Offset");
+                    if (cameraOffset != null)
+                    {
+                        headset = cameraOffset.Find("Main Camera");
+                        if (headset != null) Debug.Log("Headset found: " + headset.name);
+                    }
+                }
+
+                // 왼쪽 컨트롤러 찾기
+                if (leftController == null)
+                {
+                    leftController = FindControllerTransform(xrOrigin.transform, "Left");
+                    if (leftController != null) Debug.Log("Left Controller found: " + leftController.name);
+                }
+
+                // 오른쪽 컨트롤러 찾기  
+                if (rightController == null)
+                {
+                    rightController = FindControllerTransform(xrOrigin.transform, "Right");
+                    if (rightController != null) Debug.Log("Right Controller found: " + rightController.name);
+                }
+            }
+            else
+            {
+                Debug.LogWarning("XR Origin not found! Please assign VR components manually.");
+            }
+        }
+    }
+
+    private Transform FindControllerTransform(Transform parent, string side)
+    {
+        // 다양한 컨트롤러 이름 패턴 시도
+        string[] patterns = {
+            side + "Hand Controller",
+            side + " Hand Controller", 
+            side + "Controller",
+            side + " Controller",
+            side + "Hand",
+            side + " Hand"
+        };
+
+        foreach (string pattern in patterns)
+        {
+            Transform found = parent.Find(pattern);
+            if (found != null) return found;
+            
+            // 재귀적으로 찾기
+            found = FindTransformRecursive(parent, pattern);
+            if (found != null) return found;
+        }
+
+        return null;
+    }
+
+    private Transform FindTransformRecursive(Transform parent, string name)
+    {
+        foreach (Transform child in parent)
+        {
+            if (child.name.Contains(name))
+                return child;
+                
+            Transform result = FindTransformRecursive(child, name);
+            if (result != null)
+                return result;
+        }
+        return null;
+    }
+
+    private void DisableIK()
+    {
+        if (leftArmIK != null) leftArmIK.weight = 0f;
+        if (rightArmIK != null) rightArmIK.weight = 0f;
+        if (headAimIK != null) headAimIK.weight = 0f;
+    }
+
     void Start()
     {
         optimizer = GetComponent<VRAvatarOptimizer>();
         
+        // VR 컨트롤러 자동 감지 시도
+        AutoDetectVRComponents();
+        
         SetupIKTargets();
         MeasureAvatarDimensions();
+        
+        // 교정 전까지 IK 비활성화
+        DisableIK();
 
         if (requireTPose)
         {
@@ -302,6 +401,13 @@ public class AdvancedVRCalibration : MonoBehaviour
 
     private void UpdateVRTracking()
     {
+        // VR 컴포넌트 유효성 검사
+        if (headset == null || leftController == null || rightController == null)
+        {
+            Debug.LogWarning("VR components not properly assigned!");
+            return;
+        }
+
         // Head tracking
         UpdateHeadTracking();
 
@@ -401,6 +507,14 @@ public class AdvancedVRCalibration : MonoBehaviour
 
     void OnGUI()
     {
+        // VR 컴포넌트 상태 표시
+        if (headset == null || leftController == null || rightController == null)
+        {
+            GUI.color = Color.red;
+            GUI.Label(new Rect(10, 70, 400, 30), "VR Components Missing! Check Inspector settings.");
+            GUI.color = Color.white;
+        }
+
         if (!isCalibrated && !isCalibrating)
         {
             GUI.Label(new Rect(10, 10, 300, 30), "Press 'T' for T-Pose Calibration");
@@ -426,6 +540,11 @@ public class AdvancedVRCalibration : MonoBehaviour
         if (isCalibrated)
         {
             GUI.Label(new Rect(10, 10, 200, 30), "Calibrated! Press 'R' to reset");
+            
+            // 디버그 정보 표시
+            GUI.Label(new Rect(10, 100, 300, 20), $"Height Ratio: {heightRatio:F2}");
+            GUI.Label(new Rect(10, 120, 300, 20), $"Arm Ratio: {armLengthRatio:F2}"); 
+            GUI.Label(new Rect(10, 140, 300, 20), $"Shoulder Ratio: {shoulderWidthRatio:F2}");
         }
     }
 }

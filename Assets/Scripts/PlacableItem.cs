@@ -24,6 +24,10 @@ public class PlacableItem : GrabbableItem // GrabbableItem 상속
     [Header("Item Properties")]
     [Tooltip("이 아이템의 실제 월드 높이.")]
     [SerializeField] private float itemWorldHeight = 1.0f; // 월드 공간에서의 높이 (충돌 검사용)
+    
+    [Header("Inventory Data")]
+    [Tooltip("인벤토리 시스템용 아이템 데이터")]
+    public ItemData itemData; // 인벤토리 시스템과 연동용
 
     // === 외부 접근용 프로퍼티 ===
     public float ItemWorldHeight => itemWorldHeight; // 읽기 전용 높이 정보
@@ -63,16 +67,24 @@ public class PlacableItem : GrabbableItem // GrabbableItem 상속
     /// PlacableItem은 놓인 후 배치 시스템에 의해 배치될 수 있습니다.
     /// 여기서는 기본 물리 상태로 돌아가도록만 처리하고, 실제 배치는 외부 시스템(VRPlacementController)에서 담당합니다.
     /// </summary>
+    // VRPlacementController에서 배치를 처리했는지 추적하는 플래그
+    private bool isBeingHandledByPlacementSystem = false;
+    
+    /// <summary>
+    /// VRPlacementController에서 이 아이템을 처리 중임을 알립니다.
+    /// </summary>
+    public void SetHandledByPlacementSystem(bool handled)
+    {
+        isBeingHandledByPlacementSystem = handled;
+    }
+
     protected override void OnGrabEnded(SelectExitEventArgs args)
     {
         base.OnGrabEnded(args); // GrabbableItem의 OnGrabEnded 호출 (물리 속성 복원)
 
-        // 아이템이 놓였을 때, 배치 시스템이 이 아이템을 배치할지 결정합니다.
-        // IsPlaced 상태는 VRPlacementController와 같은 외부 스크립트에서만 변경되어야 합니다.
-        // 여기서 IsPlaced를 false로 설정하면, 배치된 아이템을 잡았다 놓았을 때
-        // 다시 자유 상태가 됩니다.
-        IsPlaced = false; // 놓이면 배치 상태는 일단 해제 (재배치 대기)
-        Debug.Log($"PlacableItem: '{gameObject.name}'이 놓였습니다. 배치 상태 해제됨.");
+        // PlacableItem에서는 배치 상태를 변경하지 않습니다.
+        // 배치 상태는 오직 VRPlacementController나 GridManager에서만 관리됩니다.
+        Debug.Log($"PlacableItem: '{gameObject.name}'이 놓였습니다. 배치 상태는 외부 시스템에서 관리됨.");
     }
 
     /// <summary>
@@ -205,5 +217,15 @@ public class PlacableItem : GrabbableItem // GrabbableItem 상속
                 Gizmos.DrawWireSphere(cornerPos, 0.1f);
             }
         }
+    }
+
+    public override ItemData GetItemData()
+    {
+        return itemData;
+    }
+
+    public override int GetQuantity()
+    {
+        return 1; // PlacableItem은 항상 1개
     }
 }

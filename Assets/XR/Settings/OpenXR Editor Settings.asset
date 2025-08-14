@@ -18,5 +18,6 @@ MonoBehaviour:
     - com.meta.openxr.featureset.metaxr
   - featureSets:
     - com.picoxr.openxr.features
+    - com.meta.openxr.featureset.metaxr
   m_vulkanAdditionalGraphicsQueue: 0
   m_vulkanOffscreenSwapchainNoMainDisplay: 1

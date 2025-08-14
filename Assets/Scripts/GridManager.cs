@@ -160,7 +160,7 @@ public class GridManager : MonoBehaviour
         }
 
         // 현재 배치 모드이고 로컬 그리드가 활성화되어 있다면 즉시 업데이트
-        if (isPlacementMode && localGridParent.activeInHierarchy)
+        if (isPlacementMode && localGridParent != null && localGridParent.activeInHierarchy)
             RefreshLocalGridCells();
     }
 
@@ -179,7 +179,7 @@ public class GridManager : MonoBehaviour
             occupiedCells.Remove(cell);
 
         // 현재 배치 모드이고 로컬 그리드가 활성화되어 있다면 즉시 업데이트
-        if (cellsToRemove.Count > 0 && isPlacementMode && localGridParent.activeInHierarchy)
+        if (cellsToRemove.Count > 0 && isPlacementMode && localGridParent != null && localGridParent.activeInHierarchy)
             RefreshLocalGridCells();
     }
 
@@ -224,15 +224,23 @@ public class GridManager : MonoBehaviour
     {
         currentPlacingItem = item;
         isPlacementMode = true;
-        localGridParent.SetActive(true);
+        
+        if (localGridParent != null)
+        {
+            localGridParent.SetActive(true);
+        }
     }
 
     public void EndPlacementMode()
     {
         currentPlacingItem = null;
         isPlacementMode = false;
-        localGridParent.SetActive(false);
-        ClearLocalGridCells();
+        
+        if (localGridParent != null)
+        {
+            localGridParent.SetActive(false);
+            ClearLocalGridCells();
+        }
     }
 
     public void UpdateLocalGrid(Vector3 playerPosition)
@@ -373,7 +381,7 @@ public class GridManager : MonoBehaviour
                 OccupyCells(item);
         }
 
-        if (isPlacementMode && localGridParent.activeInHierarchy)
+        if (isPlacementMode && localGridParent != null && localGridParent.activeInHierarchy)
             RefreshLocalGridCells();
     }
 

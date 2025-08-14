@@ -3,28 +3,28 @@ using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 /// <summary>
-/// GrabbableItem - VR È¯°æ¿¡¼­ XRGrabInteractableÀ» ÅëÇØ ÀâÀ» ¼ö ÀÖ´Â ¸ğµç ¾ÆÀÌÅÛÀÇ ±âº» Å¬·¡½º
+/// GrabbableItem - VR È¯ï¿½æ¿¡ï¿½ï¿½ XRGrabInteractableï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½âº» Å¬ï¿½ï¿½ï¿½ï¿½
 ///
-/// == ÁÖ¿ä ±â´É ==
-/// 1. XRGrabInteractable ¹× Rigidbody ÄÄÆ÷³ÍÆ® ÀÚµ¿ °ü¸® ¹× ÃÊ±âÈ­
-/// 2. ÀâÈù »óÅÂ¿Í ³õÀÎ »óÅÂ¿¡ µû¸¥ Rigidbody ¹°¸® ¼Ó¼º Á¦¾î
-/// 3. Àâ±â »óÈ£ÀÛ¿ë °ü·Ã ÀÌº¥Æ® Ã³¸® (Àâ±â ½ÃÀÛ/³¡)
+/// == ï¿½Ö¿ï¿½ ï¿½ï¿½ï¿½ ==
+/// 1. XRGrabInteractable ï¿½ï¿½ Rigidbody ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½Úµï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ê±ï¿½È­
+/// 2. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â¿ï¿½ ï¿½ï¿½ï¿½ï¿½ Rigidbody ï¿½ï¿½ï¿½ï¿½ ï¿½Ó¼ï¿½ ï¿½ï¿½ï¿½ï¿½
+/// 3. ï¿½ï¿½ï¿½ ï¿½ï¿½È£ï¿½Û¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ìºï¿½Æ® Ã³ï¿½ï¿½ (ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½)
 ///
-/// == »ç¿ë ¹æ¹ı ==
-/// - ÇÃ·¹ÀÌ¾î°¡ ÀâÀ» ¼ö ÀÖ´Â ¸ğµç ¿ùµå ¾ÆÀÌÅÛÀÇ ºÎ¸ğ Å¬·¡½º·Î »ç¿ëÇÕ´Ï´Ù.
-/// - ÀÌ Å¬·¡½º¸¦ »ó¼Ó¹Ş¾Æ °¢ ¾ÆÀÌÅÛÀÇ °íÀ¯ÇÑ ·ÎÁ÷À» ±¸ÇöÇÕ´Ï´Ù.
+/// == ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ==
+/// - ï¿½Ã·ï¿½ï¿½Ì¾î°¡ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Î¸ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
+/// - ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ó¹Ş¾ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
 /// </summary>
-[RequireComponent(typeof(XRGrabInteractable))] // VR¿¡¼­ ÀâÀ» ¼ö ÀÖµµ·Ï XRGrabInteractable ÇÊ¿ä
-[RequireComponent(typeof(Rigidbody))] // ¹°¸®Àû »óÈ£ÀÛ¿ëÀ» À§ÇØ Rigidbody ÇÊ¿ä
+[RequireComponent(typeof(XRGrabInteractable))] // VRï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Öµï¿½ï¿½ï¿½ XRGrabInteractable ï¿½Ê¿ï¿½
+[RequireComponent(typeof(Rigidbody))] // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È£ï¿½Û¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Rigidbody ï¿½Ê¿ï¿½
 public abstract class GrabbableItem : MonoBehaviour
 {
-    protected XRGrabInteractable grabInteractable; // VR Àâ±â ÀÎÅÍ·¢¼Ç ÄÄÆ÷³ÍÆ®
-    protected Rigidbody itemRigidbody; // ¹°¸® ½Ã¹Ä·¹ÀÌ¼Ç ÄÄÆ÷³ÍÆ®
+    protected XRGrabInteractable grabInteractable; // VR ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
+    protected Rigidbody itemRigidbody; // ï¿½ï¿½ï¿½ï¿½ ï¿½Ã¹Ä·ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
 
-    protected bool isGrabbed = false; // ÇöÀç ÇÃ·¹ÀÌ¾î¿¡°Ô ÀâÇôÀÖ´ÂÁö ¿©ºÎ
+    protected bool isGrabbed = false; // ï¿½ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾î¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
     /// <summary>
-    /// Unity Awake: ÄÄÆ÷³ÍÆ® ÃÊ±âÈ­ ¹× Á¾¼Ó¼º °ËÁõ
+    /// Unity Awake: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½Ê±ï¿½È­ ï¿½ï¿½ ï¿½ï¿½ï¿½Ó¼ï¿½ ï¿½ï¿½ï¿½ï¿½
     /// </summary>
     protected virtual void Awake()
     {
@@ -32,7 +32,7 @@ public abstract class GrabbableItem : MonoBehaviour
     }
 
     /// <summary>
-    /// Unity OnEnable: XRGrabInteractable ÀÌº¥Æ® ¸®½º³Ê µî·Ï
+    /// Unity OnEnable: XRGrabInteractable ï¿½Ìºï¿½Æ® ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
     /// </summary>
     protected virtual void OnEnable()
     {
@@ -44,7 +44,7 @@ public abstract class GrabbableItem : MonoBehaviour
     }
 
     /// <summary>
-    /// Unity OnDisable: XRGrabInteractable ÀÌº¥Æ® ¸®½º³Ê ÇØÁ¦
+    /// Unity OnDisable: XRGrabInteractable ï¿½Ìºï¿½Æ® ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     /// </summary>
     protected virtual void OnDisable()
     {
@@ -56,15 +56,15 @@ public abstract class GrabbableItem : MonoBehaviour
     }
 
     /// <summary>
-    /// ÇÊ¼ö ÄÄÆ÷³ÍÆ® ÃÊ±âÈ­ ¹× ¼³Á¤
+    /// ï¿½Ê¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½Ê±ï¿½È­ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     /// </summary>
     private void InitializeComponents()
     {
         grabInteractable = GetComponent<XRGrabInteractable>();
         if (grabInteractable == null)
         {
-            Debug.LogError($"GrabbableItem: '{gameObject.name}'¿¡ XRGrabInteractable ÄÄÆ÷³ÍÆ®°¡ ÇÊ¿äÇÕ´Ï´Ù.", this);
-            enabled = false; // ÄÄÆ÷³ÍÆ®°¡ ¾øÀ¸¸é ÀÌ ½ºÅ©¸³Æ® ºñÈ°¼ºÈ­
+            Debug.LogError($"GrabbableItem: '{gameObject.name}'ï¿½ï¿½ XRGrabInteractable ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½Ê¿ï¿½ï¿½Õ´Ï´ï¿½.", this);
+            enabled = false; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Å©ï¿½ï¿½Æ® ï¿½ï¿½È°ï¿½ï¿½È­
             return;
         }
 
@@ -72,63 +72,66 @@ public abstract class GrabbableItem : MonoBehaviour
         if (itemRigidbody == null)
         {
             itemRigidbody = gameObject.AddComponent<Rigidbody>();
-            Debug.LogWarning($"GrabbableItem: '{gameObject.name}'¿¡ Rigidbody°¡ ¾ø¾î ÀÚµ¿À¸·Î Ãß°¡Çß½À´Ï´Ù.", this);
+            Debug.LogWarning($"GrabbableItem: '{gameObject.name}'ï¿½ï¿½ Rigidbodyï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½ï¿½ß½ï¿½ï¿½Ï´ï¿½.", this);
         }
 
-        // ÃÊ±â »óÅÂ ¼³Á¤ (Àâ±â °¡´ÉÇÏ°í ¹°¸® ½Ã¹Ä·¹ÀÌ¼Ç È°¼ºÈ­)
+        // ï¿½Ê±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã¹Ä·ï¿½ï¿½Ì¼ï¿½ È°ï¿½ï¿½È­)
         SetPhysicsForUnGrabbed();
     }
 
     /// <summary>
-    /// ¾ÆÀÌÅÛÀÌ ÀâÇûÀ» ¶§ È£ÃâµË´Ï´Ù.
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½Ë´Ï´ï¿½.
     /// </summary>
-    /// <param name="args">»óÈ£ÀÛ¿ë ÀÌº¥Æ® ÀÎÀÚ</param>
+    /// <param name="args">ï¿½ï¿½È£ï¿½Û¿ï¿½ ï¿½Ìºï¿½Æ® ï¿½ï¿½ï¿½ï¿½</param>
     protected virtual void OnGrabStarted(SelectEnterEventArgs args)
     {
         isGrabbed = true;
         SetPhysicsForGrabbed();
-        Debug.Log($"GrabbableItem: '{gameObject.name}'ÀÌ ÀâÇû½À´Ï´Ù.");
+        Debug.Log($"GrabbableItem: '{gameObject.name}'ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½.");
     }
 
     /// <summary>
-    /// ¾ÆÀÌÅÛÀÌ ³õ¿´À» ¶§ È£ÃâµË´Ï´Ù.
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½Ë´Ï´ï¿½.
     /// </summary>
-    /// <param name="args">»óÈ£ÀÛ¿ë ÀÌº¥Æ® ÀÎÀÚ</param>
+    /// <param name="args">ï¿½ï¿½È£ï¿½Û¿ï¿½ ï¿½Ìºï¿½Æ® ï¿½ï¿½ï¿½ï¿½</param>
     protected virtual void OnGrabEnded(SelectExitEventArgs args)
     {
         isGrabbed = false;
         SetPhysicsForUnGrabbed();
-        Debug.Log($"GrabbableItem: '{gameObject.name}'ÀÌ ³õ¿´½À´Ï´Ù.");
+        Debug.Log($"GrabbableItem: '{gameObject.name}'ì„ ë†“ì•˜ìŠµë‹ˆë‹¤.");
+        
+        // ë†“ì•˜ì„ ë•Œ ì£¼ë³€ InventoryDropZone í™•ì¸
+        CheckForInventoryDropZone();
     }
 
     /// <summary>
-    /// ¾ÆÀÌÅÛÀÌ ÀâÇûÀ» ¶§ÀÇ ¹°¸® ¼Ó¼º ¼³Á¤
-    /// (ÀÏ¹İÀûÀ¸·Î KinematicÀ¸·Î ¼³Á¤ÇÏ¿© ÄÁÆ®·Ñ·¯¿¡ µû¶ó ¿òÁ÷ÀÌµµ·Ï ÇÔ)
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ó¼ï¿½ ï¿½ï¿½ï¿½ï¿½
+    /// (ï¿½Ï¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Kinematicï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ìµï¿½ï¿½ï¿½ ï¿½ï¿½)
     /// </summary>
     protected virtual void SetPhysicsForGrabbed()
     {
         if (itemRigidbody == null) return;
 
-        itemRigidbody.isKinematic = true;  // ÀâÇûÀ» ¶§´Â ¹°¸® ¿µÇâ ¹ŞÁö ¾ÊÀ½
-        itemRigidbody.useGravity = false;  // Áß·Â ¹«½Ã
-        itemRigidbody.linearVelocity = Vector3.zero; // ¼Óµµ ÃÊ±âÈ­
-        itemRigidbody.angularVelocity = Vector3.zero; // °¢¼Óµµ ÃÊ±âÈ­
+        itemRigidbody.isKinematic = true;  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        itemRigidbody.useGravity = false;  // ï¿½ß·ï¿½ ï¿½ï¿½ï¿½ï¿½
+        itemRigidbody.linearVelocity = Vector3.zero; // ï¿½Óµï¿½ ï¿½Ê±ï¿½È­
+        itemRigidbody.angularVelocity = Vector3.zero; // ï¿½ï¿½ï¿½Óµï¿½ ï¿½Ê±ï¿½È­
     }
 
     /// <summary>
-    /// ¾ÆÀÌÅÛÀÌ ³õ¿´À» ¶§ÀÇ ¹°¸® ¼Ó¼º ¼³Á¤
-    /// (ÀÏ¹İÀûÀ¸·Î ¹°¸® ½Ã¹Ä·¹ÀÌ¼Ç È°¼ºÈ­)
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ó¼ï¿½ ï¿½ï¿½ï¿½ï¿½
+    /// (ï¿½Ï¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã¹Ä·ï¿½ï¿½Ì¼ï¿½ È°ï¿½ï¿½È­)
     /// </summary>
     protected virtual void SetPhysicsForUnGrabbed()
     {
         if (itemRigidbody == null) return;
 
-        itemRigidbody.isKinematic = false; // ³õ¿´À» ¶§´Â ¹°¸® ¿µÇâ ¹ŞÀ½
-        itemRigidbody.useGravity = true;   // Áß·Â È°¼ºÈ­
+        itemRigidbody.isKinematic = false; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        itemRigidbody.useGravity = true;   // ï¿½ß·ï¿½ È°ï¿½ï¿½È­
     }
 
     /// <summary>
-    /// Rigidbody ÄÄÆ÷³ÍÆ® À¯È¿¼º °Ë»ç
+    /// Rigidbody ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½È¿ï¿½ï¿½ ï¿½Ë»ï¿½
     /// </summary>
     public bool HasValidRigidbody()
     {
@@ -136,10 +139,41 @@ public abstract class GrabbableItem : MonoBehaviour
     }
 
     /// <summary>
-    /// XRGrabInteractable ÄÄÆ÷³ÍÆ® À¯È¿¼º °Ë»ç
+    /// XRGrabInteractable ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½È¿ï¿½ï¿½ ï¿½Ë»ï¿½
     /// </summary>
     public bool HasValidGrabInteractable()
     {
         return grabInteractable != null && grabInteractable.enabled;
+    }
+
+    /// <summary>
+    /// ì´ ì•„ì´í…œì˜ ItemDataë¥¼ ê°€ì ¸ì˜µë‹ˆë‹¤. í•˜ìœ„ í´ë˜ìŠ¤ì—ì„œ êµ¬í˜„í•´ì•¼ í•©ë‹ˆë‹¤.
+    /// </summary>
+    /// <returns>ItemData ë˜ëŠ” null</returns>
+    public abstract ItemData GetItemData();
+
+    /// <summary>
+    /// ì´ ì•„ì´í…œì˜ ìˆ˜ëŸ‰ì„ ê°€ì ¸ì˜µë‹ˆë‹¤. í•˜ìœ„ í´ë˜ìŠ¤ì—ì„œ êµ¬í˜„í•´ì•¼ í•©ë‹ˆë‹¤.
+    /// </summary>
+    /// <returns>ì•„ì´í…œ ìˆ˜ëŸ‰</returns>
+    public abstract int GetQuantity();
+
+    /// <summary>
+    /// ì•„ì´í…œì„ ë†“ì•˜ì„ ë•Œ ì£¼ë³€ InventoryDropZoneì„ í™•ì¸í•˜ì—¬ ì¸ë²¤í† ë¦¬ ì¶”ê°€ ì‹œë„
+    /// </summary>
+    private void CheckForInventoryDropZone()
+    {
+        // ì£¼ë³€ InventoryDropZone ì°¾ê¸° (OverlapSphere ì‚¬ìš©)
+        Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, 1.0f);
+        
+        foreach (var collider in nearbyColliders)
+        {
+            InventoryDropZone dropZone = collider.GetComponent<InventoryDropZone>();
+            if (dropZone != null)
+            {
+                dropZone.TryAddItemToInventory(this);
+                break; // ì²« ë²ˆì§¸ë¡œ ì°¾ì€ ë“œë¡­ ì¡´ì—ì„œë§Œ ì‹œë„
+            }
+        }
     }
 }

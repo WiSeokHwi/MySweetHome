@@ -7,7 +7,7 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 public class PickableItem : GrabbableItem
 {
     [Header("아이템 데이터")]
-    public CraftingMaterial itemData;
+    public ItemData itemData;
     public int quantity = 1;
 
     [Header("시각적 요소 (선택 사항)")]
@@ -23,14 +23,12 @@ public class PickableItem : GrabbableItem
         if (itemMeshRenderer == null)
             itemMeshRenderer = GetComponent<MeshRenderer>();
 
-        SetupColliders();
-
+        // 데이터가 없으면 나중에 할당될 수 있으므로 경고만 출력
         if (itemData == null)
         {
             if (enableDebugLogs)
-                Debug.LogError($"[PickableItem] {gameObject.name}: 'Item Data'가 할당되지 않았습니다! 스크립트를 비활성화합니다.", this);
-            enabled = false;
-            return;
+                Debug.LogWarning($"[PickableItem] {gameObject.name}: 'ItemData'가 아직 할당되지 않았습니다. 나중에 할당 예정.", this);
+            return; // 초기화는 건너뛰지만 비활성화는 하지 않음
         }
 
         UpdateVisuals();
@@ -48,86 +46,41 @@ public class PickableItem : GrabbableItem
             return;
         }
 
-        PlayerInventory inventory = PlayerInventory.Instance;
-        if (inventory == null)
-        {
-            if (enableDebugLogs)
-                Debug.LogError("[PickableItem] PlayerInventory.Instance가 null입니다! 아이템 추가 불가.");
-            return;
-        }
-
-        bool success = inventory.AddItem(itemData, quantity);
-        if (success)
-        {
-            if (enableDebugLogs)
-                Debug.Log($"[PickableItem] {itemData.materialName} x{quantity} 인벤토리에 추가됨.");
-
-            if (itemMeshRenderer != null)
-            {
-                StartCoroutine(DestroyWithEffect());
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-        }
-        else
-        {
-            if (enableDebugLogs)
-                Debug.LogWarning($"[PickableItem] 인벤토리가 가득 차 {itemData.materialName} 추가 실패, 아이템 다시 드롭 처리 필요.");
-        }
     }
 
-    private void SetupColliders()
-    {
-        Collider physicsCollider = GetComponent<Collider>();
-        if (physicsCollider == null)
-        {
-            physicsCollider = gameObject.AddComponent<BoxCollider>();
-            if (enableDebugLogs)
-                Debug.Log($"[PickableItem] {gameObject.name}: 물리용 BoxCollider 추가");
-        }
-
-        physicsCollider.isTrigger = false;
-
-        GameObject triggerChild = new GameObject("InteractionTrigger");
-        triggerChild.transform.SetParent(transform);
-        triggerChild.transform.localPosition = Vector3.zero;
-        triggerChild.transform.localRotation = Quaternion.identity;
-        triggerChild.transform.localScale = Vector3.one;
-
-        SphereCollider triggerCollider = triggerChild.AddComponent<SphereCollider>();
-        triggerCollider.isTrigger = true;
-
-        if (physicsCollider is BoxCollider boxCol)
-        {
-            float maxSize = Mathf.Max(boxCol.size.x, boxCol.size.y, boxCol.size.z);
-            triggerCollider.radius = maxSize * 0.7f;
-        }
-        else if (physicsCollider is SphereCollider sphereCol)
-        {
-            triggerCollider.radius = sphereCol.radius * 1.2f;
-        }
-        else
-        {
-            triggerCollider.radius = 0.5f;
-        }
-
-        var grabInteractable = GetComponent<XRGrabInteractable>();
-        if (grabInteractable != null)
-        {
-            grabInteractable.colliders.Clear();
-            grabInteractable.colliders.Add(triggerCollider);
-        }
-
-        if (enableDebugLogs)
-            Debug.Log($"[PickableItem] {gameObject.name}: 듀얼 콜라이더 시스템 설정 완료");
-    }
 
     private void UpdateVisuals()
     {
         // 필요한 시각적 업데이트 구현
         // 예: 아이템 텍스처나 색상 변경 등
+    }
+
+    /// <summary>
+    /// 데이터 할당 후 수동으로 초기화를 완료하는 메소드
+    /// </summary>
+    public void CompleteInitialization()
+    {
+        if (itemData != null)
+        {
+            UpdateVisuals();
+            if (enableDebugLogs)
+                Debug.Log($"[PickableItem] {gameObject.name}: 초기화 완료", this);
+        }
+        else
+        {
+            if (enableDebugLogs)
+                Debug.LogError($"[PickableItem] {gameObject.name}: 데이터가 여전히 할당되지 않았습니다!", this);
+        }
+    }
+
+    public override ItemData GetItemData()
+    {
+        return itemData;
+    }
+
+    public override int GetQuantity()
+    {
+        return quantity;
     }
 
     /// <summary>
