@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 158f126de910cfa4fb1707385aaab127, type: 3}
+  m_Name: Box
+  m_EditorClassIdentifier: 
+  itemName: Box
+  description: "\uADF8\uB0E5 \uBC15\uC2A4"
+  thumbnail: {fileID: 21300000, guid: 17d565bb4a7744b41b7e4dc7e3a09e35, type: 3}
+  gameModel: {fileID: 4247289562356279153, guid: a61a05d0c4c2bbb4fa28583e318d3ec7, type: 3}
+  maxStackSize: 1
+  isStackable: 0
+  gridSize: {x: 1, y: 1, z: 1}

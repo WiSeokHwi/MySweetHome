@@ -1,47 +1,105 @@
-// InventoryManager.cs
+/// <summary>
+/// ==================== INVENTORY MANAGEMENT SYSTEM ====================
+/// 
+/// 【 시스템 개요 】
+/// 게임 내 모든 인벤토리 데이터와 UI를 통합 관리하는 싱글톤 클래스입니다.
+/// VR 환경에서의 아이템 저장, 이동, 스택 관리 등을 담당합니다.
+/// 
+/// 【 주요 책임 】
+/// 1. 인벤토리 슬롯 데이터 관리 (SlotData 리스트)
+/// 2. UI 아이콘 오브젝트 생성 및 동기화
+/// 3. 아이템 추가/제거/이동 로직
+/// 4. 스택 시스템 (같은 아이템 묶음 관리)
+/// 
+/// 【 연동 시스템 】
+/// - GrabbableItem.TryAddToInventory(): 월드 아이템을 인벤토리로 이동
+/// - VRUIItemIcon: 각 슬롯의 시각적 표현 및 드래그 앤 드롭
+/// - InventoryUIManager: 인벤토리 창 열기/닫기 및 아이템 정보 표시
+/// - VRUISlot: 각 인벤토리 슬롯의 UI 컨테이너
+/// 
+/// 【 데이터 저장 위치 】
+/// - inventorySlots: 모든 슬롯의 아이템 데이터 (이 클래스에서 관리)
+/// - iconObjects: 각 슬롯의 UI 아이콘 오브젝트 참조 (이 클래스에서 관리)
+/// - Instance: 싱글톤 인스턴스 (이 클래스에서 관리)
+/// 
+/// 【 주요 호출 흐름 】
+/// 1. 게임 시작 → Awake() → 슬롯 초기화 → UI 아이콘 생성
+/// 2. 아이템 획득 → AddItemToInventory() → 스택/빈슬롯 찾기 → UI 업데이트
+/// 3. 아이템 이동 → MoveItem() → 슬롯 간 데이터 교환 → UI 동기화
+/// </summary>
 using System.Collections.Generic;
 using UnityEngine;
 
 public class InventoryManager : MonoBehaviour
 {
+    // ========== 싱글톤 패턴 ==========
+    /// <summary>
+    /// 【접근 위치】GrabbableItem, InventoryUIManager, VRUIItemIcon 등에서 접근
+    /// 【용도】전역에서 인벤토리 시스템에 접근하기 위한 싱글톤 인스턴스
+    /// 【초기화】Awake()에서 설정
+    /// </summary>
     public static InventoryManager Instance;
 
-    [Header("최대 슬롯수")]
+    // ========== 인벤토리 설정 ==========
+    [Header("📦 인벤토리 기본 설정")]
+    [Tooltip("인벤토리 최대 슬롯 수 - 이 값에 따라 slotUIList와 iconObjects 배열 크기 결정")]
     public int maxSlots = 10;
+    
+    /// <summary>
+    /// 【데이터 저장】각 슬롯의 아이템 정보 (ItemData, quantity)
+    /// 【업데이트 위치】AddItemToInventory(), MoveItem(), RemoveItemFromSlot()
+    /// 【참조 위치】모든 인벤토리 관련 메서드에서 참조
+    /// </summary>
     public List<SlotData> inventorySlots = new List<SlotData>();
 
-    [Header("UI 슬롯들 (배치 순서)")]
+    // ========== UI 연결 설정 ==========
+    [Header("🎨 UI 연결 설정")]
+    [Tooltip("인벤토리 UI의 각 슬롯들 - Inspector에서 순서대로 할당")]
     public VRUISlot[] slotUIList;
 
-    [Header("아이템 아이콘들")]
+    [Tooltip("아이템 아이콘 UI 프리팹 - VRUIItemIcon 컴포넌트가 있어야 함")]
     public GameObject itemIconPrefab;
 
-    [Header("아이콘 부모 (UI 캔버스 안)")]
+    [Tooltip("생성된 아이콘들의 부모 Transform - 보통 Canvas 하위의 Panel")]
     public Transform iconParent;
 
-    // 슬롯별 아이콘 오브젝트 저장
+    /// <summary>
+    /// 【데이터 저장】각 슬롯에 대응하는 UI 아이콘 오브젝트들
+    /// 【생성 위치】Awake()에서 itemIconPrefab으로부터 Instantiate
+    /// 【업데이트 위치】UpdateSlotUI()에서 아이템 정보에 따라 표시/숨김 처리
+    /// </summary>
     private VRUIItemIcon[] iconObjects;
 
-    [Header("기본 아이템 (게임 시작 시 인벤토리에 넣을 아이템들)")]
+    [Header("🎮 게임 시작 설정")]
+    [Tooltip("게임 시작 시 자동으로 인벤토리에 추가할 기본 아이템들")]
     public ItemData[] defaultItem;
 
+    // ==========================================================================
+    // UNITY 생명주기 및 초기화
+    // ==========================================================================
+    
+    /// <summary>
+    /// 【Unity 생명주기】GameObject 생성 시 최초 1회 호출
+    /// 【처리 내용】싱글톤 패턴 적용, 인벤토리 슬롯 및 UI 초기화
+    /// </summary>
     void Awake()
     {
+        // 싱글톤 패턴 구현 - 중복 인스턴스 방지
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
 
-        // 슬롯 데이터 초기화
+        // 인벤토리 슬롯 데이터 초기화 (빈 슬롯으로 설정)
         inventorySlots.Clear();
         for (int i = 0; i < maxSlots; i++)
         {
             inventorySlots.Add(new SlotData()
             {
-                item = null,
-                quantity = 0
+                item = null,      // 아이템 없음
+                quantity = 0      // 수량 0
             });
         }
 
-        // 아이콘 오브젝트 배열 초기화
+        // UI 아이콘 오브젝트 배열 초기화
         iconObjects = new VRUIItemIcon[maxSlots];
 
         // 슬롯 인덱스 및 아이콘 초기화

@@ -6,6 +6,33 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using System.Collections.Generic;
 using UnityEngine.XR;
 
+/// <summary>
+/// ==================== VR PLACEMENT SYSTEM ====================
+/// 
+/// 【 시스템 개요 】
+/// VR 환경에서 PlacableItem을 그리드 기반으로 배치하는 시스템입니다.
+/// 실시간 미리보기, 충돌 검사, 스마트 로테이션 등의 기능을 제공합니다.
+/// 
+/// 【 주요 기능 】
+/// 1. 배치 모드 토글 (EquipState에서 호출)
+/// 2. 실시간 미리보기 오브젝트 생성 및 표시
+/// 3. 레이캐스트 기반 배치 위치 결정
+/// 4. GridManager와 연동한 그리드 스냅
+/// 5. 3D 충돌 검사 (PreviewCollisionDetector 사용)
+/// 6. 햅틱 피드백
+/// 
+/// 【 연동 시스템 】
+/// - PlacableItem: 배치 가능한 아이템 (가구, 건물 등)
+/// - GridManager: 그리드 시스템 및 셀 점유 관리
+/// - EquipState: 배치 모드 토글 입력 처리
+/// - PreviewCollisionDetector: 미리보기 오브젝트 충돌 감지
+/// 
+/// 【 상태 관리 】
+/// - inPlacementMode: 현재 배치 모드인지 여부
+/// - currentGrabbedItem: 현재 배치 중인 아이템
+/// - previewObject: 미리보기용 복제 오브젝트
+/// - hasCollision: 현재 충돌이 감지되었는지 여부
+/// </summary>
 public class VRPlacementController : MonoBehaviour
 {
     [Header("References")]
@@ -16,8 +43,6 @@ public class VRPlacementController : MonoBehaviour
     [Tooltip("아이템 배치 모드에서 Raycast를 수행할 XRRayInteractor.")]
     public XRRayInteractor placementRayInteractor;
 
-    [Header("Input Actions")]
-    public InputActionProperty placementModeToggleAction;
 
     [Header("Placement Visuals")]
     public Material previewCanPlaceMaterial;
@@ -26,6 +51,7 @@ public class VRPlacementController : MonoBehaviour
     [Header("Raycast Settings")]
     public LayerMask placementLayerMask = -1;
     public float raycastDistance = 10.0f;
+    
 
     [Header("Placement Rotation")]
     [Tooltip("Smart Rotation 사용 여부")]
@@ -88,6 +114,7 @@ public class VRPlacementController : MonoBehaviour
             // 초기 상태에서는 배치 레이캐스터 비활성화
             placementRayInteractor.enabled = false;
         }
+
     }
 
     void OnEnable()
@@ -98,11 +125,6 @@ public class VRPlacementController : MonoBehaviour
             nearFarInteractor.selectExited.AddListener(OnSelectExited);
         }
 
-        if (placementModeToggleAction.action != null)
-        {
-            placementModeToggleAction.action.Enable();
-            placementModeToggleAction.action.started += OnPlacementModeTogglePressed;
-        }
     }
 
     void OnDisable()
@@ -113,11 +135,6 @@ public class VRPlacementController : MonoBehaviour
             nearFarInteractor.selectExited.RemoveListener(OnSelectExited);
         }
 
-        if (placementModeToggleAction.action != null)
-        {
-            placementModeToggleAction.action.started -= OnPlacementModeTogglePressed;
-            placementModeToggleAction.action.Disable();
-        }
 
         ExitPlacementMode();
 
@@ -183,23 +200,42 @@ public class VRPlacementController : MonoBehaviour
         }
     }
 
-    private void OnPlacementModeTogglePressed(InputAction.CallbackContext context)
+    /// <summary>
+    /// EquipState에서 호출하는 배치 모드 토글 메소드
+    /// </summary>
+    public void TogglePlacementMode(PlacableItem item)
     {
-        if (currentGrabbedItem == null)
+        if (item == null)
         {
-            Debug.Log("VRPlacementController: 아이템을 잡고 있지 않아 배치 모드로 전환할 수 없습니다.");
+            Debug.Log("VRPlacementController: 배치할 아이템이 없습니다.");
             return;
         }
 
         // 아이템이 실제로 잡혀있는지 확인
-        if (!IsItemCurrentlyGrabbed(currentGrabbedItem))
+        if (!IsItemCurrentlyGrabbed(item))
         {
             Debug.LogWarning("VRPlacementController: 아이템이 실제로 잡혀있지 않아 배치 모드로 전환할 수 없습니다.");
-            currentGrabbedItem = null; // 상태 정리
             return;
         }
 
+        // currentGrabbedItem 업데이트
+        currentGrabbedItem = item;
+
         TogglePlacementMode();
+    }
+    
+    /// <summary>
+    /// EquipState에서 호출하는 배치 확정 메소드
+    /// </summary>
+    public void ConfirmPlacement()
+    {
+        if (!inPlacementMode)
+        {
+            Debug.Log("VRPlacementController: 배치 모드가 아닙니다.");
+            return;
+        }
+        
+        AttemptPlaceItem();
     }
 
     private void TogglePlacementMode()
@@ -693,6 +729,15 @@ public class VRPlacementController : MonoBehaviour
         var interactableGameObject = (currentInteractable as MonoBehaviour)?.gameObject;
         return interactableGameObject == item.gameObject;
     }
+    
+    /// <summary>
+    /// 현재 배치 모드인지 반환합니다 (외부에서 호출 가능).
+    /// </summary>
+    public bool IsInPlacementMode()
+    {
+        return inPlacementMode;
+    }
+
 
     void OnDestroy()
     {
