@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: -5503026495698590485}
   - component: {fileID: 6525974377502244129}
   - component: {fileID: -8221947657519408527}
-  - component: {fileID: -4903145431064794968}
+  - component: {fileID: 7356211910581325582}
   m_Layer: 0
   m_Name: Tile_Grass_plane
   m_TagString: Land
@@ -155,7 +155,7 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 4605771872901996020, guid: 7e345ee175d80894ba8beefc7a926f07, type: 3}
---- !u!114 &-4903145431064794968
+--- !u!114 &7356211910581325582
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -164,7 +164,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 149852449998234273}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: df89be07f00dc2348bb7ae958ee39e98, type: 3}
+  m_Script: {fileID: 11500000, guid: 00eb99a6b8e18f0418212d29a438d677, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   compatibleToolTypes: 
@@ -174,6 +174,12 @@ MonoBehaviour:
   dirt: {fileID: 2100000, guid: c0f3379161eb5b04c9b2697468e92e8d, type: 2}
   water: {fileID: 2100000, guid: e80bda26503113c428382719f2fa8e61, type: 2}
   selectObject: {fileID: 5140374645006771085}
+  plantedSeed: {fileID: 0}
+  currentState: 0
+  plantedTime: 0
+  growthMultiplier: 1
+  currentCropVisual: {fileID: 0}
+  cropSpawnOffset: {x: 0, y: 0.1, z: 0}
 --- !u!1 &5140374645006771085
 GameObject:
   m_ObjectHideFlags: 0

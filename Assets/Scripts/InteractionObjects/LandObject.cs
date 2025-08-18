@@ -25,7 +25,7 @@ public class LandObject : InteractionObject
     
     private Renderer landRenderer;
     
-    void Start()
+    protected virtual void Start()
     {
         landRenderer = GetComponent<Renderer>();
         
@@ -56,7 +56,7 @@ public class LandObject : InteractionObject
     /// <summary>
     /// 괭이로 땅을 갈아엎는 처리
     /// </summary>
-    private void ProcessWithHoe()
+    protected virtual void ProcessWithHoe()
     {
         LandType newLandType = LandType.Dirt; // 괭이로 갈면 항상 흙으로 변경
         
@@ -94,7 +94,7 @@ public class LandObject : InteractionObject
         }
     }
 
-    public void GizmosSelected(bool select)
+    public virtual void GizmosSelected(bool select)
     {
         if (selectObject != null)
         {

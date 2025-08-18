@@ -69532,6 +69532,88 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 675454933690857499, guid: 4f99f5b219d7a8a4e9eba7787f21baf6, type: 3}
   m_PrefabInstance: {fileID: 234873088}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1084737400
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1084737402}
+  - component: {fileID: 1084737401}
+  m_Layer: 0
+  m_Name: FarmingDataCreator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1084737401
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1084737400}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4d9c489cd1c9cf47ae50a1a0413f186, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dataFolderPath: Assets/Data/Farming/
+  dataPresets:
+  - seedName: "\uB2F9\uADFC \uC528\uC557"
+    cropName: "\uB2F9\uADFC"
+    growthTime: 60
+    maxStages: 3
+    harvestAmount: 2
+    seedDropChance: 0.4
+    seedDropAmount: 1
+    isRepeatedHarvest: 0
+    reharvestTime: 0
+  - seedName: "\uAC10\uC790 \uC528\uC557"
+    cropName: "\uAC10\uC790"
+    growthTime: 90
+    maxStages: 4
+    harvestAmount: 3
+    seedDropChance: 0.3
+    seedDropAmount: 2
+    isRepeatedHarvest: 0
+    reharvestTime: 0
+  - seedName: "\uBC00 \uC528\uC557"
+    cropName: "\uBC00"
+    growthTime: 120
+    maxStages: 5
+    harvestAmount: 4
+    seedDropChance: 0.5
+    seedDropAmount: 3
+    isRepeatedHarvest: 0
+    reharvestTime: 0
+  - seedName: "\uD1A0\uB9C8\uD1A0 \uC528\uC557"
+    cropName: "\uD1A0\uB9C8\uD1A0"
+    growthTime: 150
+    maxStages: 4
+    harvestAmount: 2
+    seedDropChance: 0.2
+    seedDropAmount: 1
+    isRepeatedHarvest: 1
+    reharvestTime: 60
+--- !u!4 &1084737402
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1084737400}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.16488162, y: 1.8643329, z: -0.24794798}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1085247543
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -106898,6 +106980,63 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4f99f5b219d7a8a4e9eba7787f21baf6, type: 3}
+--- !u!1001 &1657941550
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3018033422951000174, guid: 4c994887ef17c30439821d41927f6b02, type: 3}
+      propertyPath: m_Name
+      value: CarrotSeed
+      objectReference: {fileID: 0}
+    - target: {fileID: 7927783873541550613, guid: 4c994887ef17c30439821d41927f6b02, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7927783873541550613, guid: 4c994887ef17c30439821d41927f6b02, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.42243993
+      objectReference: {fileID: 0}
+    - target: {fileID: 7927783873541550613, guid: 4c994887ef17c30439821d41927f6b02, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7927783873541550613, guid: 4c994887ef17c30439821d41927f6b02, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7927783873541550613, guid: 4c994887ef17c30439821d41927f6b02, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7927783873541550613, guid: 4c994887ef17c30439821d41927f6b02, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7927783873541550613, guid: 4c994887ef17c30439821d41927f6b02, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7927783873541550613, guid: 4c994887ef17c30439821d41927f6b02, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7927783873541550613, guid: 4c994887ef17c30439821d41927f6b02, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7927783873541550613, guid: 4c994887ef17c30439821d41927f6b02, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 4c994887ef17c30439821d41927f6b02, type: 3}
 --- !u!4 &1657963987 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7002733155982371654, guid: bfe81fad0194c934f89ba7ddbcce2bce, type: 3}
@@ -143753,4 +143892,6 @@ SceneRoots:
   - {fileID: 96075997}
   - {fileID: 2903281115935722428}
   - {fileID: 596916093}
+  - {fileID: 1657941550}
   - {fileID: 1561903501}
+  - {fileID: 1084737402}

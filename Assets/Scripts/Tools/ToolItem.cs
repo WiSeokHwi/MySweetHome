@@ -40,22 +40,20 @@ public class ToolItem : GrabbableItem
     [Tooltip("이 도구의 타입과 메타데이터를 정의하는 ScriptableObject")]
     public EquipmentData toolData;
     
-    // ========== 상호작용 설정 ==========
-    [Header("도구 상호작용")]
-    [Tooltip("도구 끝부분의 트리거 콜라이더 - 이 콜라이더에 ToolTriggerHandler 컴포넌트 필요")]
-    public Collider toolTriggerCollider;
+    // ========== 레이캐스트 상호작용 설정 ==========
+    [Header("레이캐스트 설정")]
+    [Tooltip("도구 사용 시 레이캐스트 시작 지점 (도구 끝부분)")]
+    public Transform raycastOrigin;
+    
+    [Tooltip("레이캐스트 감지 범위")]
+    public float detectionRange = 2.0f;
+    
+    [Tooltip("상호작용 오브젝트 감지용 레이어 마스크")]
+    public LayerMask interactionLayerMask = -1;
     
     [Header("디버그")]
     [SerializeField] private bool enableDebugLogs = true;
     
-    // ========== 상태 추적 ==========
-    /// <summary>
-    /// 【데이터 저장】현재 상호작용 가능한 InteractionObject들의 집합
-    /// 【업데이트 위치】OnToolTriggerEnter(추가), OnToolTriggerExit(제거)
-    /// 【참조 위치】UseTool()에서 상호작용할 대상 오브젝트 확인
-    /// 【자료형】HashSet으로 중복 방지 및 빠른 검색
-    /// </summary>
-    private HashSet<InteractionObject> interactableObjects = new HashSet<InteractionObject>();
 
     /// <summary>
     /// 【Unity 생명주기】컴포넌트 초기화
@@ -65,21 +63,6 @@ public class ToolItem : GrabbableItem
     {
         base.Awake(); // GrabbableItem 초기화
 
-        // 트리거 콜라이더에 ToolTriggerHandler 연결
-        if (toolTriggerCollider != null)
-        {
-            var handler = toolTriggerCollider.GetComponent<ToolTriggerHandler>();
-            if (handler != null)
-            {
-                handler.Initialize(this); // ToolTriggerHandler에 이 ToolItem 참조 전달
-            }
-            else
-            {
-                if (enableDebugLogs)
-                    Debug.LogWarning($"[ToolItem] {gameObject.name}: 트리거 콜라이더에 ToolTriggerHandler 컴포넌트가 없습니다.");
-            }
-        }
-
         // 도구 데이터 유효성 검사
         if (toolData == null)
         {
@@ -87,11 +70,11 @@ public class ToolItem : GrabbableItem
                 Debug.LogWarning($"[ToolItem] {gameObject.name}: EquipmentData가 할당되지 않았습니다.");
         }
         
-        // 트리거 콜라이더 유효성 검사
-        if (toolTriggerCollider == null)
+        // 레이캐스트 원점 유효성 검사
+        if (raycastOrigin == null)
         {
             if (enableDebugLogs)
-                Debug.LogWarning($"[ToolItem] {gameObject.name}: 도구 트리거 콜라이더가 할당되지 않았습니다.");
+                Debug.LogWarning($"[ToolItem] {gameObject.name}: 레이캐스트 원점이 할당되지 않았습니다. 도구 위치를 사용합니다.");
         }
     }
 
@@ -103,22 +86,73 @@ public class ToolItem : GrabbableItem
         if (enableDebugLogs)
             Debug.Log($"[ToolItem] {toolData.toolType} 사용!");
 
-        // 현재 상호작용 가능한 오브젝트들이 있는 경우에만 도구 사용
-        if (interactableObjects.Count > 0)
+        // 레이캐스트로 상호작용 오브젝트 감지
+        List<InteractionObject> detectedObjects = DetectInteractionObjectsWithRaycast();
+        
+        if (detectedObjects.Count > 0)
         {
-            // 모든 상호작용 가능한 오브젝트에게 도구 사용 요청
-            foreach (InteractionObject interactionObj in interactableObjects)
+            // 감지된 오브젝트들에게 도구 사용 요청
+            foreach (InteractionObject interactionObj in detectedObjects)
             {
-                if (interactionObj != null)
+                if (interactionObj != null && interactionObj.CanInteractWith(toolData.toolType))
                 {
                     interactionObj.InteractWithTool(toolData.toolType);
+                    
+                    if (enableDebugLogs)
+                        Debug.Log($"[ToolItem] {toolData.toolType}로 {interactionObj.name}과 상호작용했습니다.");
                 }
             }
         }
         else
         {
             if (enableDebugLogs)
-                Debug.Log($"[ToolItem] {toolData.toolType}: 상호작용할 오브젝트가 없습니다.");
+                Debug.Log($"[ToolItem] {toolData.toolType}: 레이캐스트로 상호작용할 오브젝트를 찾지 못했습니다.");
+        }
+    }
+    
+    /// <summary>
+    /// 레이캐스트로 상호작용 가능한 오브젝트들을 감지
+    /// </summary>
+    /// <returns>감지된 InteractionObject 리스트</returns>
+    private List<InteractionObject> DetectInteractionObjectsWithRaycast()
+    {
+        List<InteractionObject> detectedObjects = new List<InteractionObject>();
+        
+        // 레이캐스트 시작점 설정 (raycastOrigin이 없으면 도구 위치 사용)
+        Vector3 origin = raycastOrigin != null ? raycastOrigin.position : transform.position;
+        Vector3 direction = raycastOrigin != null ? raycastOrigin.forward : transform.forward;
+        
+        // 레이캐스트 실행
+        RaycastHit[] hits = Physics.RaycastAll(origin, direction, detectionRange, interactionLayerMask);
+        
+        foreach (RaycastHit hit in hits)
+        {
+            InteractionObject interactionObj = hit.collider.GetComponent<InteractionObject>();
+            if (interactionObj != null && !detectedObjects.Contains(interactionObj))
+            {
+                detectedObjects.Add(interactionObj);
+            }
+        }
+        
+        return detectedObjects;
+    }
+    
+    /// <summary>
+    /// 디버그용 기즈모 그리기 - 레이캐스트 범위 표시
+    /// </summary>
+    private void OnDrawGizmosSelected()
+    {
+        if (raycastOrigin != null)
+        {
+            // 레이캐스트 방향과 범위 표시
+            Gizmos.color = Color.yellow;
+            Vector3 origin = raycastOrigin.position;
+            Vector3 direction = raycastOrigin.forward;
+            Gizmos.DrawRay(origin, direction * detectionRange);
+            
+            // 감지 범위 끝점 표시
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(origin + direction * detectionRange, 0.1f);
         }
     }
 
@@ -148,37 +182,5 @@ public class ToolItem : GrabbableItem
         UseTool();
     }
     
-    /// <summary>
-    /// 트리거 콜라이더에 오브젝트가 들어왔을 때 호출 (외부에서 호출됨)
-    /// </summary>
-    public void OnToolTriggerEnter(Collider other, InteractionObject interactionObject)
-    {
-        if (!isGrabbed) return; // 잡힌 상태에서만 상호작용
-        
-        // InteractionObject가 있고 이 도구와 상호작용 가능한지 확인
-        if (interactionObject != null && interactionObject.CanInteractWith(toolData.toolType))
-        {
-            interactableObjects.Add(interactionObject);
-            
-            if (enableDebugLogs)
-                Debug.Log($"[ToolItem] {toolData.toolType} 도구가 {interactionObject.gameObject.name}과(와) 상호작용 가능합니다.");
-        }
-    }
-    
-    /// <summary>
-    /// 트리거 콜라이더에서 오브젝트가 나갔을 때 호출 (외부에서 호출됨)
-    /// </summary>
-    public void OnToolTriggerExit(Collider other)
-    {
-        InteractionObject interactionObject = other.GetComponent<InteractionObject>();
-        
-        if (interactionObject != null && interactableObjects.Contains(interactionObject))
-        {
-            interactableObjects.Remove(interactionObject);
-            
-            if (enableDebugLogs)
-                Debug.Log($"[ToolItem] {toolData.toolType} 도구가 {interactionObject.gameObject.name}과(와) 상호작용을 중단했습니다.");
-        }
-    }
     
 }
