@@ -29,11 +29,11 @@ public class FarmTile : LandObject
     public GameObject currentCropVisual;
     
     [Header("Visual Settings")]
-    [Tooltip("작물 오브젝트가 생성될 위치 (로컬 좌표)")]
-    public Vector3 cropSpawnOffset = Vector3.up * 0.1f;
+    [Tooltip("씨앗 심은 후 표시할 흙더미 오브젝트")]
+    public GameObject soilMoundObject;
     
-    // 현재 성장 단계 (캐시)
-    private int currentGrowthStage = 0;
+    [Tooltip("완전 성장 시 생성될 CropItem 위치 (로컬 좌표)")]
+    public Vector3 cropItemSpawnOffset = Vector3.up * 0.5f;
     
     // 성장 업데이트 최적화를 위한 타이머
     private float lastGrowthUpdateTime = 0f;
@@ -107,10 +107,10 @@ public class FarmTile : LandObject
         plantedSeed = seedData;
         currentState = FarmTileState.Growing;
         plantedTime = Time.time;
-        currentGrowthStage = 0;
         
-        // 초기 작물 시각적 오브젝트 생성
-        UpdateCropVisual();
+        // 흙더미 오브젝트 활성화
+        if (soilMoundObject != null)
+            soilMoundObject.SetActive(true);
         
         if (enableDebugLogs)
             Debug.Log($"[FarmTile] {gameObject.name}: {seedData.itemName} 씨앗을 심었습니다.");
@@ -164,13 +164,18 @@ public class FarmTile : LandObject
             Debug.Log($"[FarmTile] {plantedSeed.itemName} 작물을 수확했습니다. " +
                      $"보상: {reward.mainItem?.itemName} x{reward.mainItemAmount}, 씨앗 x{reward.bonusSeeds}");
         
+        // Crop 오브젝트를 월드에 드롭
+        DropCropItem();
+        
         // 반복 수확 가능한 작물이면 재수확 상태로 변경
         if (plantedSeed.isRepeatedHarvest)
         {
             currentState = FarmTileState.Growing;
             plantedTime = Time.time; // 재수확 타이머 리셋
-            currentGrowthStage = 0;  // 성장 단계 리셋
-            UpdateCropVisual();
+            
+            // 흙더미 다시 활성화
+            if (soilMoundObject != null)
+                soilMoundObject.SetActive(true);
         }
         else
         {
@@ -190,56 +195,103 @@ public class FarmTile : LandObject
             return;
         
         float growthTime = Time.time - plantedTime;
-        int newGrowthStage = CalculateGrowthStage(growthTime);
-        
-        // 성장 단계가 변경되었으면 시각적 업데이트
-        if (newGrowthStage != currentGrowthStage)
-        {
-            currentGrowthStage = newGrowthStage;
-            UpdateCropVisual();
-            
-            if (enableDebugLogs)
-                Debug.Log($"[FarmTile] {plantedSeed.itemName} 성장 단계: {currentGrowthStage}/{plantedSeed.maxGrowthStages}");
-        }
+        float totalGrowthTimeInSeconds = plantedSeed.minutesToGrow * 60f;
+        float effectiveGrowthTime = growthTime * growthMultiplier;
         
         // 완전 성장 체크
-        if (plantedSeed.IsFullyGrown(currentGrowthStage))
+        if (effectiveGrowthTime >= totalGrowthTimeInSeconds)
         {
             currentState = FarmTileState.ReadyToHarvest;
             
-            // 수확 가능한 상호작용 컴포넌트 추가
-            AddHarvestableComponent();
+            // Crop 오브젝트 생성
+            CreateCropItem();
             
             if (enableDebugLogs)
                 Debug.Log($"[FarmTile] {plantedSeed.itemName} 작물이 완전히 자랐습니다! 수확 가능.");
         }
     }
     
+    
     /// <summary>
-    /// 작물의 시각적 표현을 업데이트
+    /// 완전 성장 시 CropItem 생성
     /// </summary>
-    private void UpdateCropVisual()
+    private void CreateCropItem()
     {
-        // 기존 시각적 오브젝트 제거
-        if (currentCropVisual != null)
+        if (plantedSeed?.cropItem == null) return;
+        
+        // 이미 CropItem이 생성되어 있으면 건드리지 않음
+        if (currentCropVisual != null) return;
+        
+        // CropItem의 gameModel을 사용하여 오브젝트 생성
+        GameObject cropModel = plantedSeed.cropItem.gameModel;
+        if (cropModel != null)
+        {
+            currentCropVisual = Instantiate(cropModel, transform);
+            currentCropVisual.transform.localPosition = cropItemSpawnOffset;
+            currentCropVisual.name = $"{plantedSeed.cropItem.itemName}_Crop";
+            
+            // Rigidbody가 있다면 kinematic으로 설정 (떨어지지 않도록)
+            Rigidbody rb = currentCropVisual.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+            }
+            
+            // 수확 가능한 상호작용 컴포넌트 추가
+            AddHarvestableComponent();
+            
+            if (enableDebugLogs)
+                Debug.Log($"[FarmTile] CropItem 생성: {plantedSeed.cropItem.itemName}");
+        }
+    }
+    
+    /// <summary>
+    /// 수확 시 Crop 오브젝트를 월드에 드롭
+    /// </summary>
+    private void DropCropItem()
+    {
+        if (currentCropVisual == null || plantedSeed?.cropItem == null) return;
+        
+        // 현재 CropVisual을 부모에서 분리
+        currentCropVisual.transform.SetParent(null);
+        
+        // PlacableItem 컴포넌트 추가 (그리드에 배치 가능하도록)
+        PlacableItem placableItem = currentCropVisual.GetComponent<PlacableItem>();
+        if (placableItem == null)
+        {
+            placableItem = currentCropVisual.AddComponent<PlacableItem>();
+        }
+        
+        // Rigidbody kinematic 해제 (물리 효과를 위해)
+        Rigidbody rb = currentCropVisual.GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            rb = currentCropVisual.AddComponent<Rigidbody>();
+        }
+        rb.isKinematic = false;
+        
+        // 약간의 힘을 가해서 드롭 효과 연출
+        Vector3 dropForce = Vector3.up * 2f + Random.insideUnitSphere * 1f;
+        rb.AddForce(dropForce, ForceMode.Impulse);
+        
+        // 흙더미 비활성화
+        if (soilMoundObject != null)
+            soilMoundObject.SetActive(false);
+        
+        // HarvestableItem 컴포넌트 제거 (더 이상 수확 대상이 아님)
+        HarvestableItem harvestable = currentCropVisual.GetComponent<HarvestableItem>();
+        if (harvestable != null)
         {
             if (Application.isPlaying)
-                Destroy(currentCropVisual);
+                Destroy(harvestable);
             else
-                DestroyImmediate(currentCropVisual);
+                DestroyImmediate(harvestable);
         }
         
-        if (plantedSeed == null)
-            return;
+        if (enableDebugLogs)
+            Debug.Log($"[FarmTile] {plantedSeed.cropItem.itemName} 작물이 드롭되었습니다.");
         
-        // 새로운 성장 단계 프리팹 생성
-        GameObject stagePrefab = plantedSeed.GetGrowthStagePrefab(currentGrowthStage);
-        if (stagePrefab != null)
-        {
-            currentCropVisual = Instantiate(stagePrefab, transform);
-            currentCropVisual.transform.localPosition = cropSpawnOffset;
-            currentCropVisual.name = $"{plantedSeed.itemName}_Stage{currentGrowthStage}";
-        }
+        currentCropVisual = null;
     }
     
     /// <summary>
@@ -285,9 +337,12 @@ public class FarmTile : LandObject
         plantedSeed = null;
         currentState = FarmTileState.Tilled; // 갈아진 상태로 유지
         plantedTime = 0f;
-        currentGrowthStage = 0;
         
-        // 시각적 오브젝트 제거
+        // 흙더미 오브젝트 비활성화
+        if (soilMoundObject != null)
+            soilMoundObject.SetActive(false);
+        
+        // CropItem 시각적 오브젝트 제거
         if (currentCropVisual != null)
         {
             if (Application.isPlaying)
@@ -318,25 +373,6 @@ public class FarmTile : LandObject
         }
     }
     
-    /// <summary>
-    /// 현재 성장 시간으로 성장 단계를 계산
-    /// </summary>
-    /// <param name="currentGrowthTime">현재까지 자란 시간 (초)</param>
-    /// <returns>현재 성장 단계</returns>
-    private int CalculateGrowthStage(float currentGrowthTime)
-    {
-        if (plantedSeed == null) return 0;
-        
-        // 일 단위를 초 단위로 변환 (1일 = 60초로 설정, 게임 플레이를 위해 빠르게)
-        float totalGrowthTimeInSeconds = plantedSeed.daysToGrow * 60f; // 1일 = 1분
-        
-        float effectiveGrowthTime = currentGrowthTime * growthMultiplier;
-        float progressRatio = effectiveGrowthTime / totalGrowthTimeInSeconds;
-        
-        // 단계별 균등 분배
-        int stage = Mathf.FloorToInt(progressRatio * (plantedSeed.maxGrowthStages + 1));
-        return Mathf.Clamp(stage, 0, plantedSeed.maxGrowthStages);
-    }
     
     /// <summary>
     /// 성장 가속 배율을 설정 (비료, 마법 등)
@@ -360,33 +396,26 @@ public class FarmTile : LandObject
             return 0f;
         
         float growthTime = Time.time - plantedTime;
-        float totalGrowthTimeInSeconds = plantedSeed.daysToGrow * 60f; // 1일 = 1분
+        float totalGrowthTimeInSeconds = plantedSeed.minutesToGrow * 60f;
         float effectiveGrowthTime = growthTime * growthMultiplier;
         
         return Mathf.Clamp01(effectiveGrowthTime / totalGrowthTimeInSeconds);
     }
     
     /// <summary>
-    /// 다음 성장 단계까지 남은 시간 반환
+    /// 완전 성장까지 남은 시간 반환
     /// </summary>
     /// <returns>남은 시간 (초)</returns>
-    public float GetTimeToNextStage()
+    public float GetTimeToGrowth()
     {
         if (plantedSeed == null || currentState != FarmTileState.Growing)
             return 0f;
         
         float growthTime = Time.time - plantedTime;
-        float totalGrowthTimeInSeconds = plantedSeed.daysToGrow * 60f; // 1일 = 1분
+        float totalGrowthTimeInSeconds = plantedSeed.minutesToGrow * 60f;
+        float effectiveGrowthTime = growthTime * growthMultiplier;
         
-        int currentStage = CalculateGrowthStage(growthTime);
-        if (currentStage >= plantedSeed.maxGrowthStages)
-            return 0f; // 이미 완전 성장
-        
-        float timePerStage = totalGrowthTimeInSeconds / (plantedSeed.maxGrowthStages + 1);
-        float nextStageTime = (currentStage + 1) * timePerStage;
-        float effectiveCurrentTime = growthTime * growthMultiplier;
-        
-        return Mathf.Max(0f, (nextStageTime - effectiveCurrentTime) / growthMultiplier);
+        return Mathf.Max(0f, (totalGrowthTimeInSeconds - effectiveGrowthTime) / growthMultiplier);
     }
     
     /// <summary>
@@ -453,9 +482,8 @@ public class FarmTile : LandObject
         if (plantedSeed != null)
         {
             info += $"Crop: {plantedSeed.itemName}\n";
-            info += $"Growth Stage: {currentGrowthStage}/{plantedSeed.maxGrowthStages}\n";
             info += $"Growth Progress: {GetGrowthProgress():P1}\n";
-            info += $"Time to Next Stage: {GetTimeToNextStage():F1}s\n";
+            info += $"Time to Growth: {GetTimeToGrowth():F1}s\n";
             info += $"Growth Multiplier: {growthMultiplier}x\n";
         }
         

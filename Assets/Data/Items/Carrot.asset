@@ -15,6 +15,6 @@ MonoBehaviour:
   itemName: "\uB2F9\uADFC"
   description: "\uC544\uC8FC \uC798 \uC790\uB780 \uB2F9\uADFC"
   thumbnail: {fileID: 1912585218, guid: 8a1f35aebeac01e4796e69597c437bc2, type: 3}
-  gameModel: {fileID: 919132149155446097, guid: e733a9c8bd6370c4199622f040499fe1, type: 3}
+  gameModel: {fileID: 568521387391889470, guid: bca25d15bdbf1b4408c04b19d61e4616, type: 3}
   maxStackSize: 64
   isStackable: 0

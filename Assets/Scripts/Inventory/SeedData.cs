@@ -4,7 +4,8 @@ using UnityEngine;
 public class SeedData : ItemData
 {
     [Header("Growth Settings")]
-    public int daysToGrow = 3; // 작물이 자라는데 걸리는 시간 (일 단위)
+    [Tooltip("작물이 자라는데 걸리는 시간 (분 단위)")]
+    public float minutesToGrow = 3.0f; // 작물이 자라는데 걸리는 시간 (분 단위)
     public ItemData cropItem; // 수확 시 생성되는 작물 아이템
     
     [Header("Growth Stages")]

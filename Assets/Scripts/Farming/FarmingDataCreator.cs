@@ -155,7 +155,7 @@ public class FarmingDataCreator : MonoBehaviour
         seedData.isStackable = true;
         
         // 성장 관련 설정
-        seedData.daysToGrow = Mathf.RoundToInt(preset.growthTime / 60f); // 초를 일로 변환
+        seedData.minutesToGrow = preset.growthTime / 60f; // 초를 분으로 변환
         seedData.maxGrowthStages = preset.maxStages;
         
         // 수확 관련 설정
@@ -178,6 +178,51 @@ public class FarmingDataCreator : MonoBehaviour
         AssetDatabase.CreateAsset(seedData, seedPath);
         
         return seedData;
+    }
+    
+    /// <summary>
+    /// 기존 SeedData 에셋들을 새로운 minutesToGrow 필드로 업데이트
+    /// </summary>
+    [ContextMenu("Update Existing SeedData Assets")]
+    public void UpdateExistingSeedDataAssets()
+    {
+        #if UNITY_EDITOR
+        // Assets 폴더에서 모든 SeedData 에셋 찾기
+        string[] guids = UnityEditor.AssetDatabase.FindAssets("t:SeedData");
+        
+        int updatedCount = 0;
+        foreach (string guid in guids)
+        {
+            string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+            SeedData seedData = UnityEditor.AssetDatabase.LoadAssetAtPath<SeedData>(path);
+            
+            if (seedData != null)
+            {
+                // 기존 daysToGrow 값이 0이 아니면 minutesToGrow로 변환
+                // (이미 minutesToGrow가 설정된 경우는 건드리지 않음)
+                if (seedData.minutesToGrow == 0f || seedData.minutesToGrow == 3f) // 기본값인 경우
+                {
+                    // 기존 에셋들은 보통 3일이었으므로 3분으로 변환
+                    seedData.minutesToGrow = 3.0f;
+                    
+                    UnityEditor.EditorUtility.SetDirty(seedData);
+                    updatedCount++;
+                    
+                    Debug.Log($"Updated SeedData: {seedData.itemName} - minutesToGrow set to {seedData.minutesToGrow}");
+                }
+            }
+        }
+        
+        if (updatedCount > 0)
+        {
+            UnityEditor.AssetDatabase.SaveAssets();
+            Debug.Log($"Successfully updated {updatedCount} SeedData assets to use minutesToGrow field.");
+        }
+        else
+        {
+            Debug.Log("No SeedData assets needed updating.");
+        }
+        #endif
     }
     
     private GameObject[] CreateGrowthStagePrefabs(FarmingDataPreset preset)

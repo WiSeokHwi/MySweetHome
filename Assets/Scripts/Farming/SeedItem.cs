@@ -10,159 +10,136 @@ using UnityEngine.XR.Interaction.Toolkit;
 /// 3. Raycast 기반 농장 타일 감지
 /// 4. 시각적 피드백 (심기 가능/불가능)
 /// </summary>
-public class SeedItem : GrabbableItem
+public class SeedItem : RaycastHighlightItem
 {
     [Header("Seed Settings")]
     [Tooltip("이 씨앗의 데이터")]
     public SeedData seedData;
     
     [Header("Planting System")]
-    [Tooltip("씨앗 심기 감지 범위")]
-    public float plantingRange = 2.0f;
-    
-    [Tooltip("레이캐스트 레이어 마스크 (FarmTile만 감지)")]
-    public LayerMask farmTileLayerMask = -1;
-    
-    // 현재 타겟 농장 타일
-    private FarmTile currentTargetTile;
-    
+    // plantingRange, detectionLayerMask는 부모 클래스에서 상속
     // 마지막으로 하이라이트된 타일 (중복 처리 방지)
     private FarmTile lastHighlightedTile;
     
-    void Start()
+    protected override void Awake()
     {
-        if (grabInteractable != null)
-        {
-            // 잡았을 때와 놓았을 때 이벤트 등록
-            grabInteractable.selectEntered.AddListener(OnGrabbed);
-            grabInteractable.selectExited.AddListener(OnReleased);
-        }
+        base.Awake(); // RaycastHighlightItem 초기화
         
         // 씨앗 데이터 검증
         if (seedData == null)
         {
             Debug.LogError($"[SeedItem] {gameObject.name}: SeedData가 할당되지 않았습니다!");
         }
-    }
-    
-    void Update()
-    {
-        // 씨앗이 잡혀있을 때만 농장 타일 감지
-        if (IsGrabbed)
-        {
-            DetectFarmTile();
-        }
-    }
-    
-    /// <summary>
-    /// 씨앗이 잡혔을 때 호출
-    /// </summary>
-    /// <param name="args">선택 이벤트 인자</param>
-    private void OnGrabbed(SelectEnterEventArgs args)
-    {
-        Debug.Log($"[SeedItem] {seedData?.itemName} 씨앗을 잡았습니다. 농장을 찾아 심어보세요!");
-    }
-    
-    /// <summary>
-    /// 씨앗을 놓았을 때 호출
-    /// </summary>
-    /// <param name="args">선택 해제 이벤트 인자</param>
-    private void OnReleased(SelectExitEventArgs args)
-    {
-        // 하이라이트 해제
-        ClearHighlight();
         
-        Debug.Log($"[SeedItem] {seedData?.itemName} 씨앗을 놓았습니다.");
+        // 레이캐스트 방향을 아래쪽으로 설정하기 위해 detectionLayerMask 설정
+        detectionLayerMask = -1; // FarmTile 레이어 마스크
     }
     
+    // Update 로직은 부모 클래스 RaycastHighlightItem에서 처리
+    
+    // 잡기/놓기 이벤트는 부모 클래스에서 처리
+    
+    // ========== RaycastHighlightItem 추상 메서드 구현 ==========
+    
     /// <summary>
-    /// 농장 타일을 감지하고 하이라이트 처리
+    /// 레이캐스트로 FarmTile 감지 (아래쪽 방향)
     /// </summary>
-    private void DetectFarmTile()
+    protected override GameObject DetectTarget()
     {
         // 씨앗에서 아래쪽으로 레이캐스트
         Ray ray = new Ray(transform.position, Vector3.down);
         RaycastHit hit;
         
-        FarmTile detectedTile = null;
-        
-        if (Physics.Raycast(ray, out hit, plantingRange, farmTileLayerMask))
+        if (Physics.Raycast(ray, out hit, detectionRange, detectionLayerMask))
         {
-            detectedTile = hit.collider.GetComponent<FarmTile>();
+            FarmTile farmTile = hit.collider.GetComponent<FarmTile>();
+            if (farmTile != null)
+            {
+                return hit.collider.gameObject;
+            }
         }
         
-        // 타겟 타일이 변경되었으면 하이라이트 업데이트
-        if (detectedTile != currentTargetTile)
+        return null;
+    }
+    
+    /// <summary>
+    /// FarmTile 하이라이트 설정/해제 (심기 가능 여부에 따라)
+    /// </summary>
+    protected override void SetHighlight(GameObject target, bool highlight)
+    {
+        if (target == null) return;
+        
+        FarmTile farmTile = target.GetComponent<FarmTile>();
+        if (farmTile != null)
         {
-            // 이전 타일 하이라이트 해제
-            if (currentTargetTile != null)
+            if (highlight)
             {
-                SetTileHighlight(currentTargetTile, false);
+                // 심기 가능 여부에 따라 하이라이트 색상 결정
+                bool canPlant = farmTile.CanPlantSeed(seedData);
+                farmTile.ShowPlantingHighlight(true, canPlant);
             }
-            
-            currentTargetTile = detectedTile;
-            
-            // 새 타일 하이라이트 설정
-            if (currentTargetTile != null)
+            else
             {
-                bool canPlant = currentTargetTile.CanPlantSeed(seedData);
-                SetTileHighlight(currentTargetTile, canPlant);
-                
-                if (currentTargetTile != lastHighlightedTile)
+                farmTile.ShowPlantingHighlight(false);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 레이캐스트 방향을 아래쪽으로 오버라이드
+    /// </summary>
+    protected override Vector3 GetRaycastDirection()
+    {
+        return Vector3.down;
+    }
+    
+    /// <summary>
+    /// 타겟 변경 시 로그 출력
+    /// </summary>
+    protected override void OnTargetChanged(GameObject oldTarget, GameObject newTarget)
+    {
+        if (enableDebugLogs)
+        {
+            if (newTarget != null)
+            {
+                FarmTile farmTile = newTarget.GetComponent<FarmTile>();
+                if (farmTile != null)
                 {
+                    bool canPlant = farmTile.CanPlantSeed(seedData);
                     string status = canPlant ? "심기 가능" : "심기 불가능";
-                    Debug.Log($"[SeedItem] 농장 타일 감지: {currentTargetTile.name} ({status})");
+                    Debug.Log($"[SeedItem] 농장 타일 감지: {farmTile.name} ({status})");
                 }
             }
-            
-            lastHighlightedTile = currentTargetTile;
         }
-    }
-    
-    /// <summary>
-    /// 농장 타일 하이라이트 설정/해제
-    /// </summary>
-    /// <param name="tile">타겟 타일</param>
-    /// <param name="canPlant">심기 가능 여부</param>
-    private void SetTileHighlight(FarmTile tile, bool canPlant)
-    {
-        if (tile == null) return;
         
-        // FarmTile의 전용 씨앗 심기 하이라이트 사용
-        tile.ShowPlantingHighlight(true, canPlant);
+        lastHighlightedTile = newTarget?.GetComponent<FarmTile>();
     }
     
     /// <summary>
-    /// 모든 하이라이트 해제
+    /// 커스텀 디버그 기즈모 - 아래쪽 레이캐스트 표시
     /// </summary>
-    private void ClearHighlight()
+    protected override void DrawCustomGizmos()
     {
-        if (currentTargetTile != null)
-        {
-            currentTargetTile.ShowPlantingHighlight(false);
-            currentTargetTile = null;
-        }
-        lastHighlightedTile = null;
+        // 씨앗 심기 감지 범위 표시 (구체)
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, detectionRange);
     }
     
     
     /// <summary>
     /// 씨앗을 심는 실제 로직
     /// </summary>
-    private void PlantSeed()
+    private void PlantSeedOnTile(FarmTile targetTile)
     {
-        if (currentTargetTile == null || seedData == null)
+        if (targetTile == null || seedData == null)
             return;
         
         // 농장 타일에 씨앗 심기
-        bool planted = currentTargetTile.PlantSeed(seedData);
+        bool planted = targetTile.PlantSeed(seedData);
         
         if (planted)
         {
             Debug.Log($"[SeedItem] {seedData.itemName} 씨앗을 성공적으로 심었습니다!");
-            
-            // 하이라이트 해제
-            ClearHighlight();
             
             // 씨앗 아이템 제거 (또는 인벤토리에서 차감)
             DestroySeedItem();
@@ -191,19 +168,7 @@ public class SeedItem : GrabbableItem
         Destroy(gameObject);
     }
     
-    /// <summary>
-    /// 디버그용 기즈모 그리기
-    /// </summary>
-    private void OnDrawGizmosSelected()
-    {
-        // 씨앗 심기 감지 범위 표시
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, plantingRange);
-        
-        // 아래쪽으로 레이 표시
-        Gizmos.color = Color.green;
-        Gizmos.DrawRay(transform.position, Vector3.down * plantingRange);
-    }
+    // 디버그 기즈모는 부모 클래스에서 처리
     
     /// <summary>
     /// GrabbableItem 추상 메서드 구현 - 아이템 데이터 반환
@@ -234,18 +199,20 @@ public class SeedItem : GrabbableItem
             return;
         }
         
-        // 현재 타겟 농장 타일이 있고 심기 가능한 상태인지 확인
-        if (currentTargetTile != null && seedData != null)
+        // 현재 타겟이 FarmTile인지 확인하고 씨앗 심기
+        FarmTile targetTile = GetCurrentTarget()?.GetComponent<FarmTile>();
+        
+        if (targetTile != null && seedData != null)
         {
-            bool canPlant = currentTargetTile.CanPlantSeed(seedData);
+            bool canPlant = targetTile.CanPlantSeed(seedData);
             if (canPlant)
             {
                 Debug.Log($"[SeedItem] ToolUseAction을 통해 {seedData.itemName} 씨앗 심기를 시도합니다.");
-                PlantSeed();
+                PlantSeedOnTile(targetTile);
             }
             else
             {
-                Debug.LogWarning($"[SeedItem] {currentTargetTile.name}에 {seedData?.itemName} 씨앗을 심을 수 없습니다.");
+                Debug.LogWarning($"[SeedItem] {targetTile.name}에 {seedData?.itemName} 씨앗을 심을 수 없습니다.");
             }
         }
         else
@@ -254,17 +221,5 @@ public class SeedItem : GrabbableItem
         }
     }
     
-    /// <summary>
-    /// 컴포넌트 정리
-    /// </summary>
-    void OnDestroy()
-    {
-        ClearHighlight();
-        
-        if (grabInteractable != null)
-        {
-            grabInteractable.selectEntered.RemoveListener(OnGrabbed);
-            grabInteractable.selectExited.RemoveListener(OnReleased);
-        }
-    }
+    // 컴포넌트 정리는 부모 클래스에서 처리
 }

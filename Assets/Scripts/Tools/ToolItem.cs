@@ -33,26 +33,15 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class ToolItem : GrabbableItem
+public class ToolItem : RaycastHighlightItem
 {
     // ========== 도구 데이터 ==========
     [Header("도구 데이터")]
     [Tooltip("이 도구의 타입과 메타데이터를 정의하는 ScriptableObject")]
     public EquipmentData toolData;
     
-    // ========== 레이캐스트 상호작용 설정 ==========
-    [Header("레이캐스트 설정")]
-    [Tooltip("도구 사용 시 레이캐스트 시작 지점 (도구 끝부분)")]
-    public Transform raycastOrigin;
-    
-    [Tooltip("레이캐스트 감지 범위")]
-    public float detectionRange = 2.0f;
-    
-    [Tooltip("상호작용 오브젝트 감지용 레이어 마스크")]
-    public LayerMask interactionLayerMask = -1;
-    
-    [Header("디버그")]
-    [SerializeField] private bool enableDebugLogs = true;
+    // ========== 레이캐스트 설정 (기본 클래스에서 상속) ==========
+    // raycastOrigin, detectionRange, detectionLayerMask는 부모 클래스에서 제공
     
 
     /// <summary>
@@ -70,14 +59,12 @@ public class ToolItem : GrabbableItem
                 Debug.LogWarning($"[ToolItem] {gameObject.name}: EquipmentData가 할당되지 않았습니다.");
         }
         
-        // 레이캐스트 원점 유효성 검사
-        if (raycastOrigin == null)
-        {
-            if (enableDebugLogs)
-                Debug.LogWarning($"[ToolItem] {gameObject.name}: 레이캐스트 원점이 할당되지 않았습니다. 도구 위치를 사용합니다.");
-        }
+        // 레이캐스트 레이어 마스크를 interactionLayerMask로 설정
+        detectionLayerMask = -1;
     }
 
+
+    // Update 로직은 부모 클래스 RaycastHighlightItem에서 처리
 
     private void UseTool()
     {
@@ -86,75 +73,26 @@ public class ToolItem : GrabbableItem
         if (enableDebugLogs)
             Debug.Log($"[ToolItem] {toolData.toolType} 사용!");
 
-        // 레이캐스트로 상호작용 오브젝트 감지
-        List<InteractionObject> detectedObjects = DetectInteractionObjectsWithRaycast();
+        // 현재 타겟이 InteractionObject인지 확인하고 도구 사용
+        InteractionObject targetObject = GetCurrentTarget()?.GetComponent<InteractionObject>();
         
-        if (detectedObjects.Count > 0)
+        if (targetObject != null && targetObject.CanInteractWith(toolData.toolType))
         {
-            // 감지된 오브젝트들에게 도구 사용 요청
-            foreach (InteractionObject interactionObj in detectedObjects)
-            {
-                if (interactionObj != null && interactionObj.CanInteractWith(toolData.toolType))
-                {
-                    interactionObj.InteractWithTool(toolData.toolType);
-                    
-                    if (enableDebugLogs)
-                        Debug.Log($"[ToolItem] {toolData.toolType}로 {interactionObj.name}과 상호작용했습니다.");
-                }
-            }
+            targetObject.InteractWithTool(toolData.toolType);
+            
+            if (enableDebugLogs)
+                Debug.Log($"[ToolItem] {toolData.toolType}로 {targetObject.name}과 상호작용했습니다.");
         }
         else
         {
             if (enableDebugLogs)
-                Debug.Log($"[ToolItem] {toolData.toolType}: 레이캐스트로 상호작용할 오브젝트를 찾지 못했습니다.");
+                Debug.Log($"[ToolItem] {toolData.toolType}: 상호작용할 수 있는 오브젝트가 없습니다.");
         }
     }
     
-    /// <summary>
-    /// 레이캐스트로 상호작용 가능한 오브젝트들을 감지
-    /// </summary>
-    /// <returns>감지된 InteractionObject 리스트</returns>
-    private List<InteractionObject> DetectInteractionObjectsWithRaycast()
-    {
-        List<InteractionObject> detectedObjects = new List<InteractionObject>();
-        
-        // 레이캐스트 시작점 설정 (raycastOrigin이 없으면 도구 위치 사용)
-        Vector3 origin = raycastOrigin != null ? raycastOrigin.position : transform.position;
-        Vector3 direction = raycastOrigin != null ? raycastOrigin.forward : transform.forward;
-        
-        // 레이캐스트 실행
-        RaycastHit[] hits = Physics.RaycastAll(origin, direction, detectionRange, interactionLayerMask);
-        
-        foreach (RaycastHit hit in hits)
-        {
-            InteractionObject interactionObj = hit.collider.GetComponent<InteractionObject>();
-            if (interactionObj != null && !detectedObjects.Contains(interactionObj))
-            {
-                detectedObjects.Add(interactionObj);
-            }
-        }
-        
-        return detectedObjects;
-    }
+    // 레이캐스트 감지 로직은 부모 클래스의 DetectTarget()에서 처리
     
-    /// <summary>
-    /// 디버그용 기즈모 그리기 - 레이캐스트 범위 표시
-    /// </summary>
-    private void OnDrawGizmosSelected()
-    {
-        if (raycastOrigin != null)
-        {
-            // 레이캐스트 방향과 범위 표시
-            Gizmos.color = Color.yellow;
-            Vector3 origin = raycastOrigin.position;
-            Vector3 direction = raycastOrigin.forward;
-            Gizmos.DrawRay(origin, direction * detectionRange);
-            
-            // 감지 범위 끝점 표시
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(origin + direction * detectionRange, 0.1f);
-        }
-    }
+    // 디버그 기즈모는 부모 클래스에서 처리
 
 
     public override ItemData GetItemData()
@@ -180,6 +118,66 @@ public class ToolItem : GrabbableItem
         }
         
         UseTool();
+    }
+    
+    // 하이라이트 해제는 부모 클래스에서 처리
+    
+    // ========== RaycastHighlightItem 추상 메서드 구현 ==========
+    
+    /// <summary>
+    /// 레이캐스트로 InteractionObject 감지
+    /// </summary>
+    protected override GameObject DetectTarget()
+    {
+        Vector3 origin = GetRaycastOrigin();
+        Vector3 direction = GetRaycastDirection();
+        
+        // 레이캐스트 실행
+        RaycastHit[] hits = Physics.RaycastAll(origin, direction, detectionRange, detectionLayerMask);
+        
+        // 첫 번째로 호환 가능한 InteractionObject 반환
+        foreach (RaycastHit hit in hits)
+        {
+            InteractionObject interactionObj = hit.collider.GetComponent<InteractionObject>();
+            if (interactionObj != null && interactionObj.CanInteractWith(toolData.toolType))
+            {
+                return hit.collider.gameObject;
+            }
+        }
+        
+        return null;
+    }
+    
+    /// <summary>
+    /// InteractionObject 하이라이트 설정/해제
+    /// </summary>
+    protected override void SetHighlight(GameObject target, bool highlight)
+    {
+        if (target == null) return;
+        
+        InteractionObject interactionObj = target.GetComponent<InteractionObject>();
+        if (interactionObj != null)
+        {
+            interactionObj.Interact(highlight);
+        }
+    }
+    
+    /// <summary>
+    /// 타겟 변경 시 로그 출력
+    /// </summary>
+    protected override void OnTargetChanged(GameObject oldTarget, GameObject newTarget)
+    {
+        if (enableDebugLogs)
+        {
+            if (newTarget != null)
+            {
+                Debug.Log($"[ToolItem] 새로운 상호작용 타겟: {newTarget.name}");
+            }
+            else if (oldTarget != null)
+            {
+                Debug.Log($"[ToolItem] 상호작용 타겟 해제: {oldTarget.name}");
+            }
+        }
     }
     
     

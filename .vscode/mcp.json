@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "mcp-unity": {
+      "command": "node",
+      "args": [
+        "C:/Users/Administrator/Desktop/Unity/MySweetHome/Library/PackageCache/com.gamelovers.mcp-unity@a08bfcbc4af1/Server~/build/index.js"
+      ]
+    }
+  }
+}
