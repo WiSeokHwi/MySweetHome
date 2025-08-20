@@ -61,8 +61,6 @@ public class FarmingDataCreator : MonoBehaviour
             harvestAmount = 2,
             seedDropChance = 0.2f,
             seedDropAmount = 1,
-            isRepeatedHarvest = true,
-            reharvestTime = 60f
         }
     };
     
@@ -164,8 +162,6 @@ public class FarmingDataCreator : MonoBehaviour
         seedData.seedDropChance = preset.seedDropChance;
         seedData.seedDropAmount = preset.seedDropAmount;
         
-        // 특수 속성
-        seedData.isRepeatedHarvest = preset.isRepeatedHarvest;
         
         // 성장 단계 프리팹 생성
         seedData.growthStagePrefabs = CreateGrowthStagePrefabs(preset);
@@ -349,6 +345,4 @@ public struct FarmingDataPreset
     public int harvestAmount;
     public float seedDropChance;
     public int seedDropAmount;
-    public bool isRepeatedHarvest;
-    public float reharvestTime;
 }

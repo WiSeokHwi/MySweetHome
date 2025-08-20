@@ -26,9 +26,6 @@ public class SeedData : ItemData
     [Tooltip("수확 시 씨앗 드롭 수량")]
     public int seedDropAmount = 1;
     
-    [Header("Special Properties")]
-    [Tooltip("여러 번 수확 가능한 작물인가? (예: 베리류)")]
-    public bool isRepeatedHarvest = false;
     
     /// <summary>
     /// 특정 성장 단계의 프리팹을 반환

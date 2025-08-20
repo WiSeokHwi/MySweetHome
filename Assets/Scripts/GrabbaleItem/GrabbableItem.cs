@@ -40,7 +40,7 @@ using System.Collections.Generic;
 /// </summary>
 [RequireComponent(typeof(XRGrabInteractable))] // VR에서 잡을 수 있도록 XRGrabInteractable 필수
 [RequireComponent(typeof(Rigidbody))] // 물리 동작을 위해 Rigidbody 필수
-public abstract class GrabbableItem : MonoBehaviour
+public abstract class GrabbableItem : MonoBehaviour, IInteractable
 {
     // ========== 컴포넌트 참조 (Awake에서 자동 초기화) ==========
     /// <summary>Unity XR Interaction Toolkit의 잡기 컴포넌트 - Awake()에서 GetComponent로 자동 할당</summary>
@@ -318,4 +318,50 @@ public abstract class GrabbableItem : MonoBehaviour
             Debug.LogWarning($"[GrabbableItem] 인벤토리가 가득 차서 {itemData.itemName}을(를) 추가할 수 없습니다.");
         }
     }
+    
+    #region IInteractable Implementation
+    
+    /// <summary>
+    /// 상호작용 가능 여부 확인 - 잡을 수 있고 잡히지 않은 상태인지
+    /// </summary>
+    public virtual bool CanInteract()
+    {
+        return HasValidGrabInteractable() && !isGrabbed;
+    }
+    
+    /// <summary>
+    /// 호버 시작 - 기본적으로 아무 동작 안 함 (하위 클래스에서 오버라이드 가능)
+    /// </summary>
+    public virtual void OnHoverEnter()
+    {
+        // 기본 구현: 아무 동작 안 함
+        // 하위 클래스에서 하이라이트 등의 시각적 피드백 구현 가능
+    }
+    
+    /// <summary>
+    /// 호버 종료 - 기본적으로 아무 동작 안 함 (하위 클래스에서 오버라이드 가능)
+    /// </summary>
+    public virtual void OnHoverExit()
+    {
+        // 기본 구현: 아무 동작 안 함
+        // 하위 클래스에서 하이라이트 제거 등의 처리 구현 가능
+    }
+    
+    /// <summary>
+    /// 상호작용 실행 - 도구 사용 입력과 동일하게 처리
+    /// </summary>
+    public virtual void OnInteract()
+    {
+        OnToolUseInput();
+    }
+    
+    /// <summary>
+    /// GameObject 반환 (IInteractable 인터페이스 요구사항)
+    /// </summary>
+    public GameObject GetGameObject()
+    {
+        return gameObject;
+    }
+    
+    #endregion
 }

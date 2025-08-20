@@ -1,14 +1,35 @@
 using UnityEngine;
 
 /// <summary>
-/// 농장 타일 - 씨앗을 심고 작물을 재배할 수 있는 타일
+/// ==================== FARM TILE SYSTEM ====================
 /// 
-/// == 주요 기능 ==
-/// 1. LandObject 기반 농장 시스템
-/// 2. 씨앗 심기 및 작물 성장 관리
-/// 3. 실시간 성장 시간 추적
-/// 4. 작물 수확 시스템
+/// 【 시스템 개요 】
+/// 씨앗을 심고 작물을 재배할 수 있는 농장 타일입니다.
+/// LandObject를 상속받아 기본 땅 상호작용 기능을 포함하며,
+/// IInteractable 인터페이스를 오버라이드하여 수확 기능을 제공합니다.
+/// 
+/// 【 상속 구조 】
+/// MonoBehaviour → InteractionObject → LandObject → FarmTile
+/// ├── IInteractable (LandObject에서 구현, FarmTile에서 오버라이드)
+/// └── 그리드 배치 지원
+/// 
+/// 【 주요 기능 】
+/// 1. 씨앗 심기 및 작물 성장 관리 (SeedData 기반)
+/// 2. 실시간 성장 시간 추적 및 업데이트
+/// 3. 이중 상호작용 시스템:
+///    - 수확 가능 상태: VR 컨트롤러로 작물 수확
+///    - 일반 상태: 괭이로 땅 갈기 (LandObject 기본 기능)
+/// 4. 시각적 피드백 (성장 단계별 모델, 하이라이트)
 /// 5. 그리드 기반 배치 지원
+/// 
+/// 【 상태 전환 흐름 】
+/// Empty → Tilled (괭이 사용) → Growing (씨앗 심기) → ReadyToHarvest (수확 가능)
+/// 
+/// 【 연동 시스템 】
+/// - SeedData: 작물 정보 및 성장 설정
+/// - EquipState: VR 컨트롤러 상호작용 관리
+/// - GridManager: 그리드 배치 시스템
+/// - InventoryManager: 수확물 드롭 및 수집
 /// </summary>
 public class FarmTile : LandObject
 {
@@ -34,6 +55,10 @@ public class FarmTile : LandObject
     
     [Tooltip("완전 성장 시 생성될 CropItem 위치 (로컬 좌표)")]
     public Vector3 cropItemSpawnOffset = Vector3.up * 0.5f;
+    
+    [Header("Harvest Interaction")]
+    [Tooltip("VR 컨트롤러 감지 거리")]
+    public float harvestDetectionRadius = 0.5f;
     
     // 성장 업데이트 최적화를 위한 타이머
     private float lastGrowthUpdateTime = 0f;
@@ -167,21 +192,8 @@ public class FarmTile : LandObject
         // Crop 오브젝트를 월드에 드롭
         DropCropItem();
         
-        // 반복 수확 가능한 작물이면 재수확 상태로 변경
-        if (plantedSeed.isRepeatedHarvest)
-        {
-            currentState = FarmTileState.Growing;
-            plantedTime = Time.time; // 재수확 타이머 리셋
-            
-            // 흙더미 다시 활성화
-            if (soilMoundObject != null)
-                soilMoundObject.SetActive(true);
-        }
-        else
-        {
-            // 일반 작물은 수확 후 빈 타일로 변경
-            ClearCrop();
-        }
+        // 수확 후 빈 타일로 변경
+        ClearCrop();
         
         return reward;
     }
@@ -237,8 +249,7 @@ public class FarmTile : LandObject
                 rb.isKinematic = true;
             }
             
-            // 수확 가능한 상호작용 컴포넌트 추가
-            AddHarvestableComponent();
+            // 작물은 순수 시각적 오브젝트로만 사용 (FarmTile에서 상호작용 처리)
             
             if (enableDebugLogs)
                 Debug.Log($"[FarmTile] CropItem 생성: {plantedSeed.cropItem.itemName}");
@@ -255,12 +266,7 @@ public class FarmTile : LandObject
         // 현재 CropVisual을 부모에서 분리
         currentCropVisual.transform.SetParent(null);
         
-        // PlacableItem 컴포넌트 추가 (그리드에 배치 가능하도록)
-        PlacableItem placableItem = currentCropVisual.GetComponent<PlacableItem>();
-        if (placableItem == null)
-        {
-            placableItem = currentCropVisual.AddComponent<PlacableItem>();
-        }
+        // 수확물은 이미 HarvestableItem(GrabbableItem)이므로 별도 컴포넌트 추가 불필요
         
         // Rigidbody kinematic 해제 (물리 효과를 위해)
         Rigidbody rb = currentCropVisual.GetComponent<Rigidbody>();
@@ -278,56 +284,14 @@ public class FarmTile : LandObject
         if (soilMoundObject != null)
             soilMoundObject.SetActive(false);
         
-        // HarvestableItem 컴포넌트 제거 (더 이상 수확 대상이 아님)
-        HarvestableItem harvestable = currentCropVisual.GetComponent<HarvestableItem>();
-        if (harvestable != null)
-        {
-            if (Application.isPlaying)
-                Destroy(harvestable);
-            else
-                DestroyImmediate(harvestable);
-        }
+        // 작물에는 더 이상 특별한 컴포넌트가 없음 (순수 시각적 오브젝트)
         
         if (enableDebugLogs)
-            Debug.Log($"[FarmTile] {plantedSeed.cropItem.itemName} 작물이 드롭되었습니다.");
+            Debug.Log($"[FarmTile] {plantedSeed.cropItem.itemName} 작물이 수집 가능한 아이템으로 드롭되었습니다.");
         
         currentCropVisual = null;
     }
     
-    /// <summary>
-    /// 완전히 자란 작물에 수확 가능한 상호작용 컴포넌트 추가
-    /// </summary>
-    private void AddHarvestableComponent()
-    {
-        if (currentCropVisual == null) return;
-        
-        // 이미 HarvestableItem 컴포넌트가 있는지 확인
-        HarvestableItem existingHarvest = currentCropVisual.GetComponent<HarvestableItem>();
-        if (existingHarvest != null) return;
-        
-        // HarvestableItem 컴포넌트 추가
-        HarvestableItem harvestable = currentCropVisual.AddComponent<HarvestableItem>();
-        harvestable.parentFarmTile = this;
-        
-        // 콜라이더가 없다면 추가 (상호작용을 위해 필요)
-        Collider collider = currentCropVisual.GetComponent<Collider>();
-        if (collider == null)
-        {
-            // 기본적으로 BoxCollider 추가
-            BoxCollider boxCollider = currentCropVisual.AddComponent<BoxCollider>();
-            
-            // 렌더러가 있다면 bounds에 맞춰 크기 조정
-            Renderer renderer = currentCropVisual.GetComponent<Renderer>();
-            if (renderer != null)
-            {
-                boxCollider.size = renderer.bounds.size;
-                boxCollider.center = renderer.bounds.center - currentCropVisual.transform.position;
-            }
-        }
-        
-        if (enableDebugLogs)
-            Debug.Log($"[FarmTile] {plantedSeed.itemName} 작물에 수확 상호작용 컴포넌트를 추가했습니다.");
-    }
     
     /// <summary>
     /// 작물을 제거하고 타일을 초기화
@@ -489,6 +453,80 @@ public class FarmTile : LandObject
         
         return info;
     }
+    
+    #region IInteractable Implementation Override
+    
+    /// <summary>
+    /// FarmTile 전용 상호작용 가능 여부 확인
+    /// 수확 가능한 상태이거나 기본 LandObject 상호작용이 가능한 경우
+    /// </summary>
+    /// <returns>
+    /// true: 수확 가능한 작물이 있거나 기본 도구 상호작용 가능
+    /// false: 상호작용 불가능
+    /// </returns>
+    public override bool CanInteract()
+    {
+        // 우선순위 1: 수확 가능한 작물이 있는 경우
+        if (currentState == FarmTileState.ReadyToHarvest && plantedSeed != null)
+            return true;
+            
+        // 우선순위 2: 기본 LandObject 상호작용 (괭이 사용 등)
+        return base.CanInteract();
+    }
+    
+    /// <summary>
+    /// FarmTile 전용 호버 시작 처리
+    /// 수확 가능한 상태에 따라 다른 하이라이트 표시
+    /// </summary>
+    public override void OnHoverEnter()
+    {
+        if (currentState == FarmTileState.ReadyToHarvest && plantedSeed != null)
+        {
+            // 수확 가능한 경우: 수확용 하이라이트 (녹색)
+            ShowPlantingHighlight(true, true);
+            
+            if (enableDebugLogs)
+                Debug.Log($"[FarmTile] {plantedSeed.itemName} 작물 수확 가능 - 도구 사용 버튼을 눌러 수확하세요!");
+        }
+        else
+        {
+            // 일반 상호작용 가능한 경우: 기본 하이라이트
+            base.OnHoverEnter();
+        }
+    }
+    
+    /// <summary>
+    /// FarmTile 전용 호버 종료 처리
+    /// 모든 하이라이트 제거
+    /// </summary>
+    public override void OnHoverExit()
+    {
+        ShowPlantingHighlight(false);
+        base.OnHoverExit();
+    }
+    
+    /// <summary>
+    /// FarmTile 전용 상호작용 실행
+    /// 상태에 따라 수확 또는 기본 도구 상호작용 수행
+    /// </summary>
+    public override void OnInteract()
+    {
+        if (currentState == FarmTileState.ReadyToHarvest && plantedSeed != null)
+        {
+            // 수확 가능한 경우: 작물 수확 실행
+            HarvestCrop();
+            
+            if (enableDebugLogs)
+                Debug.Log($"[FarmTile] {plantedSeed.itemName} 작물을 수확했습니다!");
+        }
+        else
+        {
+            // 일반 상호작용: 기본 LandObject 동작 (괭이 사용 등)
+            base.OnInteract();
+        }
+    }
+    
+    #endregion
 }
 
 /// <summary>

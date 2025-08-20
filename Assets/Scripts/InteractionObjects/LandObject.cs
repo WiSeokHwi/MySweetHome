@@ -8,8 +8,29 @@ public enum LandType
 }
 
 /// <summary>
-/// 농지/흙과 같은 땅 관련 상호작용 오브젝트
-/// 괭이로 갈아엎거나 경작할 수 있습니다.
+/// ==================== LAND OBJECT SYSTEM ====================
+/// 
+/// 【 시스템 개요 】
+/// 농지/흙과 같은 땅 관련 상호작용 오브젝트입니다.
+/// InteractionObject를 상속받아 기본 도구 상호작용 기능을 포함하며,
+/// 땅 고유의 시각적 피드백과 상태 관리 기능을 추가로 제공합니다.
+/// 
+/// 【 상속 구조 】
+/// MonoBehaviour → InteractionObject → LandObject
+/// └── IInteractable (InteractionObject에서 구현, LandObject에서 확장)
+/// 
+/// 【 주요 기능 】
+/// 1. 땅 상태 관리 (Grass/Dirt/Water)
+/// 2. 괭이를 통한 경작 시스템
+/// 3. 이중 하이라이트 시스템:
+///    - InteractionObject 기본 상호작용 피드백
+///    - LandObject 전용 selectObject 하이라이트
+/// 4. 동적 머티리얼 교체 (상태별 시각적 변화)
+/// 
+/// 【 연동 시스템 】
+/// - EquipState: VR 컨트롤러 통합 상호작용 관리
+/// - ToolItem: 괭이 등의 도구와 상호작용
+/// - FarmTile: 농장 시스템의 기본 클래스로 활용
 /// </summary>
 public class LandObject : InteractionObject
 {
@@ -123,4 +144,31 @@ public class LandObject : InteractionObject
     {
         SwitchLandStatus(newType);
     }
+    
+    #region IInteractable Override (LandObject specific behavior)
+    
+    /// <summary>
+    /// LandObject 전용 호버 시작 처리
+    /// 기본 InteractionObject 동작에 추가로 LandObject 전용 하이라이트 적용
+    /// </summary>
+    public override void OnHoverEnter()
+    {
+        base.OnHoverEnter(); // InteractionObject의 기본 Interact(true) 호출
+        GizmosSelected(true); // LandObject 전용 하이라이트 추가
+        
+        if (enableDebugLogs)
+            Debug.Log($"[LandObject] {gameObject.name}: 땅 상호작용 가능 - 도구 사용 버튼을 눌러 경작하세요!");
+    }
+    
+    /// <summary>
+    /// LandObject 전용 호버 종료 처리
+    /// 기본 InteractionObject 동작에 추가로 LandObject 전용 하이라이트 제거
+    /// </summary>
+    public override void OnHoverExit()
+    {
+        base.OnHoverExit(); // InteractionObject의 기본 Interact(false) 호출
+        GizmosSelected(false); // LandObject 전용 하이라이트 제거
+    }
+    
+    #endregion
 }

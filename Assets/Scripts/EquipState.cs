@@ -9,26 +9,32 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 /// 
 /// 【 시스템 개요 】
 /// VR 환경에서 플레이어의 손에 들린 아이템들을 추적하고, 모든 입력을 중앙에서 관리하는 시스템입니다.
-/// 기존에 각 아이템마다 흩어져 있던 입력 처리를 이 클래스로 통합했습니다.
+/// IInteractable 인터페이스를 통해 통합된 상호작용 시스템을 제공합니다.
 /// 
 /// 【 주요 책임 】
 /// 1. 좌/우 손별 현재 장착된 아이템 추적 (equippedItems Dictionary)
 /// 2. Unity Input System을 통한 VR 입력 처리 (인벤토리 추가, 도구 사용, 배치 모드 등)
-/// 3. 입력 이벤트를 적절한 아이템의 메서드로 전달
+/// 3. IInteractable 호버 감지 및 통합 상호작용 처리
+/// 4. 입력 이벤트를 적절한 아이템/오브젝트로 전달
 /// 
 /// 【 연동 시스템 】
-/// - GrabbableItem: 모든 잡을 수 있는 아이템의 기본 클래스
+/// - IInteractable: 모든 상호작용 가능한 오브젝트의 통합 인터페이스
+/// - GrabbableItem: 모든 잡을 수 있는 아이템의 기본 클래스 (IInteractable 구현)
+/// - InteractionObject: 도구 상호작용 오브젝트 기본 클래스 (IInteractable 구현)
 /// - VRPlacementController: 아이템 배치 모드 관리
 /// - NearFarInteractor: Unity XR의 VR 컨트롤러 상호작용
 /// 
 /// 【 데이터 저장 위치 】
 /// - equippedItems: 각 손(NearFarInteractor)별 현재 장착 아이템 (Dictionary)
+/// - currentHoveredInteractable: 현재 호버 중인 IInteractable 오브젝트
 /// - 입력 액션들: Unity Input System의 InputActionReference들
 /// 
 /// 【 입력 처리 흐름 】
-/// 1. VR 컨트롤러 입력 발생 → Unity Input System
-/// 2. EquipState에서 입력 감지 → OnInventoryAddPerformed/OnToolUsePerformed 등
-/// 3. 현재 장착된 아이템에게 해당 입력 전달 → OnInventoryAddInput/OnToolUseInput
+/// 1. VR 컨트롤러 호버 → IInteractable 감지 → OnHoverEnter/Exit
+/// 2. VR 컨트롤러 입력 발생 → Unity Input System
+/// 3. EquipState에서 입력 감지 → 우선순위에 따른 상호작용 처리:
+///    - 우선순위 1: 호버 중인 IInteractable 오브젝트와 상호작용
+///    - 우선순위 2: 들고 있는 아이템의 기능 실행
 /// </summary>
 public class EquipState : MonoBehaviour
 {
@@ -56,11 +62,15 @@ public class EquipState : MonoBehaviour
     [Tooltip("배치 시스템 컨트롤러")]
     public VRPlacementController placementController;
     
+    
     [Header("디버그")]
     [SerializeField] private bool enableDebugLogs = true;
     
     // 현재 들고 있는 아이템들 추적 (손별로)
     private Dictionary<NearFarInteractor, GrabbableItem> equippedItems = new Dictionary<NearFarInteractor, GrabbableItem>();
+    
+    // 일반 상호작용 오브젝트 감지
+    private IInteractable currentHoveredInteractable = null;
     
     void Awake()
     {
@@ -99,12 +109,16 @@ public class EquipState : MonoBehaviour
         {
             leftHandInteractor.selectEntered.AddListener(OnItemGrabbed);
             leftHandInteractor.selectExited.AddListener(OnItemReleased);
+            leftHandInteractor.hoverEntered.AddListener(OnHoverEntered);
+            leftHandInteractor.hoverExited.AddListener(OnHoverExited);
         }
         
         if (rightHandInteractor != null)
         {
             rightHandInteractor.selectEntered.AddListener(OnItemGrabbed);
             rightHandInteractor.selectExited.AddListener(OnItemReleased);
+            rightHandInteractor.hoverEntered.AddListener(OnHoverEntered);
+            rightHandInteractor.hoverExited.AddListener(OnHoverExited);
         }
     }
     
@@ -140,12 +154,16 @@ public class EquipState : MonoBehaviour
         {
             leftHandInteractor.selectEntered.RemoveListener(OnItemGrabbed);
             leftHandInteractor.selectExited.RemoveListener(OnItemReleased);
+            leftHandInteractor.hoverEntered.RemoveListener(OnHoverEntered);
+            leftHandInteractor.hoverExited.RemoveListener(OnHoverExited);
         }
         
         if (rightHandInteractor != null)
         {
             rightHandInteractor.selectEntered.RemoveListener(OnItemGrabbed);
             rightHandInteractor.selectExited.RemoveListener(OnItemReleased);
+            rightHandInteractor.hoverEntered.RemoveListener(OnHoverEntered);
+            rightHandInteractor.hoverExited.RemoveListener(OnHoverExited);
         }
     }
     
@@ -224,13 +242,25 @@ public class EquipState : MonoBehaviour
         if (enableDebugLogs)
             Debug.Log("[EquipState] 도구 사용 입력이 들어왔습니다.");
         
-        // 현재 들고 있는 모든 아이템에게 입력 전달
+        // 우선순위 1: 현재 호버 중인 IInteractable 오브젝트와 상호작용
+        if (currentHoveredInteractable != null && currentHoveredInteractable.CanInteract())
+        {
+            currentHoveredInteractable.OnInteract();
+            return;
+        }
+        
+        // 우선순위 2: 현재 들고 있는 아이템의 도구 사용 기능 (IInteractable로 통합 처리)
         foreach (var kvp in equippedItems)
         {
             GrabbableItem item = kvp.Value;
             if (item != null)
             {
-                item.OnToolUseInput();
+                // GrabbableItem도 이제 IInteractable이므로 통합된 방식으로 처리
+                IInteractable itemInteractable = item as IInteractable;
+                if (itemInteractable != null && itemInteractable.CanInteract())
+                {
+                    itemInteractable.OnInteract();
+                }
                 break; // 첫 번째 아이템에서만 처리
             }
         }
@@ -317,5 +347,46 @@ public class EquipState : MonoBehaviour
                 return placableItem;
         }
         return null;
+    }
+    
+    /// <summary>
+    /// 호버 시작 이벤트 처리
+    /// </summary>
+    private void OnHoverEntered(HoverEnterEventArgs args)
+    {
+        // IInteractable 컴포넌트 확인
+        IInteractable interactable = args.interactableObject.transform.GetComponent<IInteractable>();
+        if (interactable != null && interactable.CanInteract())
+        {
+            // 이전 호버 오브젝트 정리
+            if (currentHoveredInteractable != null)
+            {
+                currentHoveredInteractable.OnHoverExit();
+            }
+            
+            // 새로운 호버 오브젝트 설정
+            currentHoveredInteractable = interactable;
+            currentHoveredInteractable.OnHoverEnter();
+            
+            if (enableDebugLogs)
+                Debug.Log($"[EquipState] 상호작용 가능한 오브젝트 호버: {interactable.GetGameObject().name}");
+        }
+    }
+    
+    /// <summary>
+    /// 호버 종료 이벤트 처리
+    /// </summary>
+    private void OnHoverExited(HoverExitEventArgs args)
+    {
+        // 현재 호버 중인 오브젝트와 같은지 확인
+        IInteractable interactable = args.interactableObject.transform.GetComponent<IInteractable>();
+        if (interactable != null && currentHoveredInteractable == interactable)
+        {
+            currentHoveredInteractable.OnHoverExit();
+            currentHoveredInteractable = null;
+            
+            if (enableDebugLogs)
+                Debug.Log($"[EquipState] 상호작용 오브젝트 호버 종료: {interactable.GetGameObject().name}");
+        }
     }
 }
